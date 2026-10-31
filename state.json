@@ -1,0 +1,380 @@
+{
+ "schema": 1,
+ "generated_at": "2026-10-31T04:50:39.982381+00:00",
+ "generated_ts": 1793422239,
+ "stale_after_sec": 300,
+ "sources": {
+  "catalog": {
+   "path": "/home/hatch/workspace/shortz-tv/catalog.json",
+   "ok": true,
+   "mtime": "2026-10-30T19:30:13.079128+00:00",
+   "bytes": 67468641
+  },
+  "shortz_version": {
+   "path": "/home/hatch/workspace/shortz-tv/app/version.txt",
+   "ok": true,
+   "mtime": "2026-10-30T02:03:55.525446+00:00",
+   "bytes": 10
+  },
+  "office_build": {
+   "path": "/home/hatch/workspace/your_files/agent-office/agent-office.html",
+   "ok": true,
+   "mtime": "2026-10-30T01:08:47.216331+00:00",
+   "bytes": 41347099
+  },
+  "clipper_state": {
+   "path": "/home/hatch/workspace/clipper/state.json",
+   "ok": true,
+   "mtime": "2026-10-24T13:31:38.885783+00:00",
+   "bytes": 2191
+  },
+  "abr_version": {
+   "path": "/home/hatch/workspace/auto-battle-royal-pages/version.txt",
+   "ok": true,
+   "mtime": "2026-10-31T01:50:36.194403+00:00",
+   "bytes": 14
+  },
+  "highlight_hub_gradle": {
+   "path": "/home/hatch/workspace/highlight-hub-app/app/build.gradle.kts",
+   "ok": true,
+   "mtime": "2026-09-18T18:01:02.720842+00:00",
+   "bytes": 2171
+  },
+  "championships_server_pkg": {
+   "path": "/home/hatch/workspace/championships-server/package.json",
+   "ok": true,
+   "mtime": "2026-09-18T00:03:04.149396+00:00",
+   "bytes": 343
+  },
+  "joust_index": {
+   "path": "/home/hatch/workspace/shortz-tv/app/joust/index.html",
+   "ok": true,
+   "mtime": "2026-10-25T23:09:05.347949+00:00",
+   "bytes": 27269
+  },
+  "goals_dir": {
+   "path": "/home/hatch/workspace/goals",
+   "ok": true,
+   "mtime": "2026-10-31T01:40:34.253408+00:00",
+   "bytes": 4420
+  }
+ },
+ "metrics": {
+  "titles": 75770,
+  "episodes": 113326,
+  "clips_total": 6,
+  "clips_posted": 2
+ },
+ "shortz": {
+  "build": "1793303188"
+ },
+ "crew": [
+  {
+   "id": "RICO",
+   "name": "RICO",
+   "role": "Clipper Captain",
+   "role_detail": "Clipper Captain — leads the Clipper team (Marco, Dev) in the Numbers Lab; cuts Shortz moments into clips",
+   "cube": "Rico's Cube — Clipper Captain",
+   "status": null
+  },
+  {
+   "id": "SANAA",
+   "name": "SANAA",
+   "role": "Catalog Hunter",
+   "role_detail": "Catalog Hunter — finds shows for Shortz and checks they play",
+   "cube": "Sanaa's Cube — Catalog Hunter",
+   "status": null
+  },
+  {
+   "id": "DEX",
+   "name": "DEX",
+   "role": "Watchdog",
+   "role_detail": "Watchdog — watches office & app health, reports breaks first",
+   "cube": "Dex's Cube — Watchdog",
+   "status": null
+  },
+  {
+   "id": "MILO",
+   "name": "MILO",
+   "role": "Game Tester",
+   "role_detail": "Game Tester — plays JOUST builds, reports what works",
+   "cube": "Milo's Cube — Game Testing",
+   "status": null
+  },
+  {
+   "id": "MARCO",
+   "name": "MARCO",
+   "role": "Clipper",
+   "role_detail": "Clipper — watches live streams with Rico, calls out the moments worth clipping",
+   "cube": null,
+   "status": null
+  },
+  {
+   "id": "DEV",
+   "name": "DEV",
+   "role": "Clipper",
+   "role_detail": "Clipper — timestamps and captions in the Numbers Lab, readies every cut for Rico",
+   "cube": null,
+   "status": null
+  },
+  {
+   "id": "TESSA",
+   "name": "TESSA",
+   "role": "Rankings",
+   "role_detail": null,
+   "cube": "Tessa's Cube — Rankings",
+   "status": null
+  }
+ ],
+ "office": {
+  "build": "v51",
+  "calendar": [
+   {
+    "title": "Current project: Shortz VS",
+    "when": "OCT 29 — NOV 26"
+   },
+   {
+    "title": "Roster Check-In",
+    "when": "TODAY · TUE 27 · 3:00 PM"
+   },
+   {
+    "title": "Clips Review",
+    "when": "WED 28 · 11:00 AM"
+   },
+   {
+    "title": "Rankings Taping",
+    "when": "FRI 30 · 12:00 PM"
+   }
+  ],
+  "desks": {
+   "DEX": {
+    "cube": "Dex's Cube — Watchdog",
+    "desk_role": "Watchdog"
+   },
+   "SANAA": {
+    "cube": "Sanaa's Cube — Catalog Hunter",
+    "desk_role": "Catalog Hunter"
+   },
+   "TESSA": {
+    "cube": "Tessa's Cube — Rankings",
+    "desk_role": "Rankings"
+   },
+   "RICO": {
+    "cube": "Rico's Cube — Clipper Captain",
+    "desk_role": "Clipper Captain"
+   },
+   "MILO": {
+    "cube": "Milo's Cube — Game Testing",
+    "desk_role": "Game Testing"
+   },
+   "CRAIG": {
+    "cube": "Craig's Cube — Home",
+    "desk_role": "Home"
+   }
+  }
+ },
+ "feed": [
+  {
+   "crew": "SANAA",
+   "text": "Catalog verified from catalog.json: 75,770 titles, 113,326 episodes",
+   "tag": "VERIFIED",
+   "status": "done",
+   "source": "catalog"
+  },
+  {
+   "crew": "DEX",
+   "text": "Shortz VS live build stamp: 1793303188",
+   "tag": "LIVE",
+   "status": "clear",
+   "source": "shortz_version"
+  },
+  {
+   "crew": "DEX",
+   "text": "Agent Office build of record: v51 — 7 crew on the roster",
+   "tag": "ROSTER",
+   "status": "clear",
+   "source": "office_build"
+  },
+  {
+   "crew": "DEX",
+   "text": "Office calendar: Current project: Shortz VS — OCT 29 — NOV 26",
+   "tag": "OFFICE",
+   "status": "working",
+   "source": "office_build"
+  },
+  {
+   "crew": "DEX",
+   "text": "Office calendar: Roster Check-In — TODAY · TUE 27 · 3:00 PM",
+   "tag": "OFFICE",
+   "status": "working",
+   "source": "office_build"
+  },
+  {
+   "crew": "RICO",
+   "text": "Latest clip: CLEANING THE STREETS w/ VITALY 🚔 AGAIN-A-THON DAY 2 🔥 (AdrienBroner)",
+   "tag": "CLIP",
+   "status": "working",
+   "source": "clipper_state"
+  },
+  {
+   "crew": "MILO",
+   "text": "Auto Battle Royal — published build v8.20261030.1",
+   "tag": "PROJECT",
+   "status": "working",
+   "source": "abr"
+  },
+  {
+   "crew": "MILO",
+   "text": "Highlight Hub — APK v1.0.3 (code 4)",
+   "tag": "PROJECT",
+   "status": "working",
+   "source": "highlight_hub"
+  },
+  {
+   "crew": "MILO",
+   "text": "JOUST — The Gate (Playable Prototype)",
+   "tag": "PROJECT",
+   "status": "working",
+   "source": "joust"
+  },
+  {
+   "crew": "MILO",
+   "text": "The Championships — server package v0.1.0",
+   "tag": "PROJECT",
+   "status": "working",
+   "source": "championships"
+  }
+ ],
+ "projects": [
+  {
+   "id": "abr",
+   "name": "Auto Battle Royal",
+   "status": "published build v8.20261030.1",
+   "version": "v8.20261030.1",
+   "updated": "2026-10-31T01:50:36.194403+00:00",
+   "source": "/home/hatch/workspace/auto-battle-royal-pages/version.txt"
+  },
+  {
+   "id": "highlight_hub",
+   "name": "Highlight Hub",
+   "status": "APK v1.0.3 (code 4)",
+   "version": "1.0.3",
+   "version_code": 4,
+   "updated": "2026-09-18T18:01:02.720842+00:00",
+   "source": "/home/hatch/workspace/highlight-hub-app/app/build.gradle.kts"
+  },
+  {
+   "id": "joust",
+   "name": "JOUST",
+   "status": "JOUST — The Gate (Playable Prototype)",
+   "version": null,
+   "updated": "2026-10-25T23:09:05.347949+00:00",
+   "source": "/home/hatch/workspace/shortz-tv/app/joust/index.html"
+  },
+  {
+   "id": "championships",
+   "name": "The Championships",
+   "status": "server package v0.1.0",
+   "version": "0.1.0",
+   "updated": "2026-09-18T00:03:04.149396+00:00",
+   "source": "/home/hatch/workspace/championships-server/package.json"
+  }
+ ],
+ "goals": [
+  {
+   "slug": "tales-in-the-dark-youtube-channel",
+   "title": "Tales in the Dark YouTube channel",
+   "updated": "2026-10-31T01:40:34.255127+00:00"
+  },
+  {
+   "slug": "auto-battle-royal",
+   "title": "Auto Battle Royal",
+   "updated": "2026-10-31T01:40:34.154408+00:00"
+  },
+  {
+   "slug": "shortz-vs-merch-store",
+   "title": "Shortz VS merch store",
+   "updated": "2026-10-30T10:49:26.366677+00:00"
+  },
+  {
+   "slug": "agent-office-side-view",
+   "title": "Agent Office Side View",
+   "updated": "2026-10-30T10:49:26.138692+00:00"
+  },
+  {
+   "slug": "cre8tor-vibez-hq",
+   "title": "Cre8tor VibeZ HQ",
+   "updated": "2026-10-28T01:30:24.650730+00:00"
+  },
+  {
+   "slug": "joust-original-ai-moba",
+   "title": "JOUST original AI MOBA",
+   "updated": "2026-10-26T03:07:09.310067+00:00"
+  },
+  {
+   "slug": "echo-protocol-megajam-entry",
+   "title": "Echo Protocol MegaJam entry",
+   "updated": "2026-10-26T03:07:09.150068+00:00"
+  },
+  {
+   "slug": "computer-brain",
+   "title": "Computer Brain",
+   "updated": "2026-10-26T00:36:18.649920+00:00"
+  },
+  {
+   "slug": "premium-vibez-website",
+   "title": "Premium VibeZ website",
+   "updated": "2026-10-24T02:40:22.778569+00:00"
+  },
+  {
+   "slug": "legacy-family-series-decision",
+   "title": "Legacy family series decision",
+   "updated": "2026-10-23T02:17:31.220148+00:00"
+  },
+  {
+   "slug": "private-groups-social-app-mockup",
+   "title": "Private groups social app mockup",
+   "updated": "2026-10-22T20:14:24.530941+00:00"
+  },
+  {
+   "slug": "jarvis-and-muse-setup",
+   "title": "Jarvis and Muse setup",
+   "updated": "2026-10-22T20:14:24.512816+00:00"
+  }
+ ],
+ "tasks_a": [
+  "Auto Battle Royal — published build v8.20261030.1",
+  "Highlight Hub — APK v1.0.3 (code 4)",
+  "JOUST — The Gate (Playable Prototype)",
+  "The Championships — server package v0.1.0"
+ ],
+ "tasks_b": [
+  "Office: Current project: Shortz VS (OCT 29 — NOV 26)",
+  "Office: Roster Check-In (TODAY · TUE 27 · 3:00 PM)",
+  "Office: Clips Review (WED 28 · 11:00 AM)",
+  "Office: Rankings Taping (FRI 30 · 12:00 PM)",
+  "Goal active: Tales in the Dark YouTube channel",
+  "Goal active: Auto Battle Royal",
+  "Goal active: Shortz VS merch store",
+  "Goal active: Agent Office Side View"
+ ],
+ "command": {
+  "waiting": [],
+  "waiting_source": null,
+  "running": [
+   "RICO",
+   "SANAA",
+   "DEX",
+   "MILO",
+   "MARCO",
+   "DEV",
+   "TESSA"
+  ]
+ },
+ "sourceless_fields": [
+  "command.waiting — no machine-readable pending-verdict queue exists in the workspace; would be settled by a verdicts store (e.g. the office app's proposals store exported, or a goals/verdicts JSON the main agent writes)",
+  "crew.status — real-time crew activity lives in the Agent Office app's Firebase backend, not in workspace files; would be settled by a Firebase export/endpoint for office presence",
+  "hq room live occupancy — same Firebase runtime state; the shipped build gives desks/roster only",
+  "metrics.rankings / metrics.games / metrics.catalog bars — the blueprint's decorative bars have no underlying real counters in the workspace (catalog counts and clip counts are real and wired)"
+ ]
+}
