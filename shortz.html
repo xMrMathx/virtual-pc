@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Shortz — on the Virtual PC</title>
+<style>
+  :root{--bg:#0b0b10;--panel:#14141c;--line:#262633;--ink:#f2f2f7;--mut:#9a9aad;
+        --cyan:#00f0ff;--mag:#ff2e88;--gold:#ffb800}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+       display:flex;flex-direction:column;overflow:hidden}
+  header{padding:10px 14px 8px;display:flex;align-items:baseline;gap:10px;border-bottom:1px solid var(--line)}
+  header .logo{font-weight:900;font-size:22px;letter-spacing:.5px}
+  header .logo b{color:var(--mag)}
+  header .sub{color:var(--mut);font-size:12px}
+  /* the player — the ONLY picture on this screen */
+  #playerWrap{position:relative;background:#000;aspect-ratio:16/9;max-height:46vh;flex:0 0 auto}
+  #player{position:absolute;inset:0;width:100%;height:100%;border:0;display:none}
+  #playerIdle{position:absolute;inset:0;display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center;
+              color:var(--mut);text-align:center;padding:12px}
+  #playerIdle .big{font-size:19px;color:var(--ink);font-weight:700}
+  #nowPlaying{padding:7px 14px;font-size:13px;color:var(--gold);border-bottom:1px solid var(--line);
+              white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:0 0 auto}
+  #nowPlaying:empty{display:none}
+  /* search + sections */
+  #tools{padding:10px 12px 6px;flex:0 0 auto}
+  #q{width:100%;height:46px;border-radius:11px;border:1.5px solid var(--line);background:var(--panel);
+     color:var(--ink);font-size:16px;padding:0 14px;outline:none}
+  #q:focus{border-color:var(--cyan)}
+  #chips{display:flex;gap:8px;overflow-x:auto;padding:10px 2px 4px;scrollbar-width:none}
+  #chips::-webkit-scrollbar{display:none}
+  .chip{flex:0 0 auto;height:36px;padding:0 14px;border-radius:999px;border:1.5px solid var(--line);
+        background:var(--panel);color:var(--ink);font-size:14px;font-weight:600;cursor:pointer}
+  .chip.on{border-color:var(--cyan);color:var(--cyan)}
+  #count{padding:2px 14px 6px;color:var(--mut);font-size:12.5px;flex:0 0 auto}
+  /* browse — plain text rows, no pictures anywhere */
+  #list{position:relative;flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;border-top:1px solid var(--line)}
+  #spacer{position:relative;width:100%}
+  .row{position:absolute;left:0;right:0;height:58px;padding:9px 14px;border-bottom:1px solid #1b1b26;cursor:pointer}
+  .row:active{background:#1a1a26}
+  .row .t{font-size:15.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .row .m{font-size:12.5px;color:var(--mut);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #empty{padding:26px 16px;color:var(--mut);text-align:center;display:none}
+  /* description card (card-first: a tap describes, the card plays) */
+  #card{position:fixed;inset:0;z-index:10;display:none;align-items:flex-end;background:rgba(2,2,6,.55)}
+  #card.open{display:flex}
+  #sheet{background:var(--panel);width:100%;max-height:82%;overflow-y:auto;border-radius:18px 18px 0 0;
+         border-top:2px solid var(--cyan);padding:18px 18px 24px}
+  #sheet h2{font-size:20px;line-height:1.25;margin-right:44px}
+  #sheet .meta{color:var(--gold);font-size:13.5px;margin:8px 0}
+  #sheet .desc{color:#d7d7e2;font-size:15px;line-height:1.5}
+  #playBtn{margin-top:18px;width:100%;height:56px;border:0;border-radius:13px;background:var(--mag);color:#fff;
+           font-size:18px;font-weight:800;cursor:pointer}
+  #parts{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  #parts:empty{display:none}
+  .part{height:40px;padding:0 13px;border-radius:10px;border:1.5px solid var(--line);background:#1c1c28;
+        color:var(--ink);font-size:14px;font-weight:600;cursor:pointer}
+  #cardX{position:absolute;top:12px;right:12px;width:44px;height:44px;border-radius:50%;border:1.5px solid var(--line);
+         background:#1c1c28;color:var(--ink);font-size:19px;cursor:pointer}
+  #sheetWrap{position:relative;width:100%}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">Shortz<b>VS</b></div>
+  <div class="sub">on your Virtual PC — pick a title, it plays up top</div>
+</header>
+
+<div id="playerWrap">
+  <div id="playerIdle">
+    <div class="big">▶ The player</div>
+    <div>Tap any title below → its card → Play.<br>It plays right here, on this screen.</div>
+  </div>
+  <iframe id="player" title="Shortz player" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen></iframe>
+</div>
+<div id="nowPlaying"></div>
+
+<div id="tools">
+  <input id="q" type="search" placeholder="Search 75,770 titles…" autocomplete="off">
+  <div id="chips"></div>
+</div>
+<div id="count">Loading your catalog…</div>
+
+<div id="list"><div id="spacer"></div><div id="empty">Nothing matches that search.</div></div>
+
+<div id="card">
+  <div id="sheetWrap">
+    <div id="sheet">
+      <h2 id="cTitle"></h2>
+      <div class="meta" id="cMeta"></div>
+      <div class="desc" id="cDesc"></div>
+      <div id="parts"></div>
+      <button id="playBtn">▶ &nbsp;PLAY</button>
+    </div>
+    <button id="cardX" aria-label="Close">✕</button>
+  </div>
+</div>
+
+<script src="shortz-feed.js"></script>
+<script>
+(function(){
+  var FEED = window.VPC_FEED || [];
+  var ROW = 58;
+  var list = document.getElementById('list'), spacer = document.getElementById('spacer'),
+      empty = document.getElementById('empty'), count = document.getElementById('count'),
+      q = document.getElementById('q'), chips = document.getElementById('chips');
+  var view = FEED, genre = '', query = '', current = null;
+
+  function fmt(n){ return n.toLocaleString('en-US'); }
+  count.textContent = FEED.length ? fmt(FEED.length) + ' titles — real catalog, no pictures, just pick one'
+                                  : 'Catalog did not load — check the connection and reopen this screen.';
+
+  /* section chips from the real genre counts */
+  var counts = {};
+  FEED.forEach(function(r){ counts[r[1]] = (counts[r[1]]||0)+1; });
+  var genres = Object.keys(counts).sort(function(a,b){ return counts[b]-counts[a]; }).slice(0, 16);
+  function chip(label, val){
+    var b = document.createElement('button'); b.className = 'chip' + (genre===val?' on':'');
+    b.textContent = label; b.onclick = function(){ genre = val; refreshChips(); apply(); };
+    chips.appendChild(b);
+  }
+  function refreshChips(){
+    chips.innerHTML = ''; chip('All', '');
+    genres.forEach(function(g){ chip(g, g); });
+  }
+  refreshChips();
+
+  function apply(){
+    var needle = query.trim().toLowerCase();
+    view = FEED.filter(function(r){
+      if (genre && r[1] !== genre) return false;
+      if (needle && r[0].toLowerCase().indexOf(needle) < 0) return false;
+      return true;
+    });
+    spacer.style.height = (view.length * ROW) + 'px';
+    empty.style.display = view.length ? 'none' : 'block';
+    count.textContent = fmt(view.length) + (genre || needle ? ' matching titles' : ' titles — real catalog, no pictures, just pick one');
+    list.scrollTop = 0; render();
+  }
+  var qt = null;
+  q.addEventListener('input', function(){ clearTimeout(qt); qt = setTimeout(function(){ query = q.value; apply(); }, 160); });
+
+  /* virtualised rows — 75k titles stay smooth */
+  function render(){
+    var st = list.scrollTop, h = list.clientHeight;
+    var a = Math.max(0, Math.floor(st / ROW) - 4), b = Math.min(view.length, Math.ceil((st + h) / ROW) + 4);
+    spacer.innerHTML = '';
+    for (var i = a; i < b; i++){
+      (function(r, idx){
+        var d = document.createElement('div'); d.className = 'row'; d.style.top = (idx * ROW) + 'px';
+        var t = document.createElement('div'); t.className = 't'; t.textContent = r[0];
+        var m = document.createElement('div'); m.className = 'm';
+        m.textContent = [r[1], r[2]].filter(Boolean).join(' · ');
+        d.appendChild(t); d.appendChild(m);
+        d.onclick = function(){ openCard(r); };
+        spacer.appendChild(d);
+      })(view[i], i);
+    }
+  }
+  list.addEventListener('scroll', function(){ requestAnimationFrame(render); });
+  window.addEventListener('resize', render);
+  render();
+
+  /* card-first: description card, then play — into the player up top */
+  var card = document.getElementById('card');
+  function openCard(r){
+    current = r;
+    document.getElementById('cTitle').textContent = r[0];
+    document.getElementById('cMeta').textContent = [r[1], r[2]].filter(Boolean).join(' · ');
+    document.getElementById('cDesc').textContent = r[3] || 'No description on file for this title.';
+    var parts = document.getElementById('parts'); parts.innerHTML = '';
+    if (r[5] && r[5].length > 1){
+      r[5].forEach(function(p){
+        var b = document.createElement('button'); b.className = 'part';
+        b.textContent = 'Part ' + p[0];
+        b.onclick = function(){ play(p[1], r[0]); };
+        parts.appendChild(b);
+      });
+    }
+    card.classList.add('open');
+  }
+  function closeCard(){ card.classList.remove('open'); }
+  document.getElementById('cardX').onclick = closeCard;
+  card.addEventListener('click', function(e){ if (e.target === card) closeCard(); });
+  document.getElementById('playBtn').onclick = function(){ if (current) play(current[4], current[0]); };
+
+  var player = document.getElementById('player'), idle = document.getElementById('playerIdle'),
+      now = document.getElementById('nowPlaying');
+  function play(url, title){
+    if (!url) return;
+    player.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'autoplay=1&rel=0';
+    player.style.display = 'block'; idle.style.display = 'none';
+    now.textContent = '▶ Now playing: ' + title;
+    closeCard();
+    window.scrollTo(0, 0);
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Browser — Virtual PC</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { height:100%; }
+  body { background:#05060a; color:#dfe9ff; font-family:system-ui, "Segoe UI", Roboto, sans-serif;
+         display:flex; flex-direction:column; overflow:hidden; }
+  #bar { display:flex; align-items:center; gap:8px; padding:8px 10px; background:#0b111e;
+         border-bottom:1.5px solid rgba(0,240,255,.35); flex:0 0 auto; }
+  #back { width:46px; height:46px; border-radius:10px; border:1.5px solid rgba(126,231,255,.35);
+          background:#0e1626; color:#7ee7ff; font-size:19px; cursor:pointer; flex:0 0 auto; }
+  #back:active { background:#14304a; }
+  #back:disabled { opacity:.35; cursor:default; }
+  #addr { flex:1; height:46px; border-radius:23px; border:1.5px solid rgba(126,231,255,.35);
+          background:#070c16; color:#fff; font-size:16px; padding:0 18px; outline:none; min-width:40px; }
+  #addr:focus { border-color:#00f0ff; }
+  #go { height:46px; padding:0 20px; border-radius:23px; border:0; cursor:pointer; flex:0 0 auto;
+        background:#00b8d9; color:#04121a; font-weight:800; font-size:15px; }
+  #web { flex:1; width:100%; border:0; background:#0a0e16; }
+  #notice { position:absolute; inset:63px 0 0 0; background:#0b111e; display:none;
+            flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:24px; }
+  #notice .big { font-size:clamp(19px, 2.6vw, 30px); font-weight:800; color:#ffd479; letter-spacing:1px; }
+  #notice .small { margin-top:10px; color:#8fa5c8; font-size:clamp(13px, 1.5vw, 16px); max-width:520px; line-height:1.5; }
+  #notice .row { display:flex; gap:10px; margin-top:22px; flex-wrap:wrap; justify-content:center; }
+  #notice button { height:48px; padding:0 20px; border-radius:11px; font-weight:800; font-size:14px; cursor:pointer; }
+  #openTab { background:#ffb800; color:#191002; border:0; }
+  #goBack { background:#0e1626; color:#7ee7ff; border:1.5px solid rgba(126,231,255,.5); }
+</style>
+</head>
+<body>
+  <div id="bar">
+    <button id="back" title="Back">◀</button>
+    <input id="addr" type="text" placeholder="Search Google or type an address…" autocomplete="off" spellcheck="false">
+    <button id="go">GO</button>
+  </div>
+  <iframe id="web" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen></iframe>
+  <div id="notice">
+    <div class="big">THIS SITE WON'T OPEN INSIDE THE PC</div>
+    <div class="small" id="noticeWhy">Some sites lock themselves so they can only open in a full browser tab. The PC can't show this one on its screen — open it in a real tab instead.</div>
+    <div class="row">
+      <button id="openTab">OPEN IN A REAL TAB ↗</button>
+      <button id="goBack">← GO BACK</button>
+    </div>
+  </div>
+<script>
+  var web = document.getElementById('web');
+  var addr = document.getElementById('addr');
+  var notice = document.getElementById('notice');
+  var BLANK = 'about:blank';
+  var stack = [], idx = -1, watchdog = 0, currentUrl = '';
+
+  // Sites that refuse to be framed (X-Frame-Options / frame-ancestors).
+  var BLOCKED = ['google.com', 'www.google.com', 'facebook.com', 'www.facebook.com',
+    'instagram.com', 'www.instagram.com', 'x.com', 'twitter.com', 'www.twitter.com',
+    'netflix.com', 'www.netflix.com', 'chase.com', 'www.chase.com',
+    'bankofamerica.com', 'www.bankofamerica.com', 'wellsfargo.com', 'www.wellsfargo.com',
+    'paypal.com', 'www.paypal.com', 'accounts.google.com'];
+
+  function hostOf(u) { try { return new URL(u).hostname.toLowerCase(); } catch (e) { return ''; } }
+
+  function rewrite(u) {
+    // YouTube watch pages refuse framing; the nocookie embed player works.
+    var m = u.match(/[?&]v=([\w-]{6,})/);
+    if ((u.indexOf('youtube.com/watch') !== -1) && m) return 'https://www.youtube-nocookie.com/embed/' + m[1] + '?autoplay=1&rel=0';
+    var y = u.match(/youtu\.be\/([\w-]{6,})/);
+    if (y) return 'https://www.youtube-nocookie.com/embed/' + y[1] + '?autoplay=1&rel=0';
+    return u;
+  }
+
+  function toUrl(raw) {
+    raw = (raw || '').trim();
+    if (!raw) return '';
+    if (/^https?:\/\//i.test(raw)) return raw;
+    if (raw.indexOf(' ') === -1 && raw.indexOf('.') !== -1) return 'https://' + raw;
+    // Search: Google itself refuses to be framed, so searches run
+    // through Bing — the bar is what he sees, the results just work.
+    return 'https://www.bing.com/search?q=' + encodeURIComponent(raw);
+  }
+
+  function showNotice(url, why) {
+    clearTimeout(watchdog);
+    document.getElementById('noticeWhy').textContent = why ||
+      'Some sites lock themselves so they can only open in a full browser tab. The PC can\u2019t show this one on its screen \u2014 open it in a real tab instead.';
+    notice.dataset.url = url;
+    notice.style.display = 'flex';
+  }
+  function hideNotice() { notice.style.display = 'none'; }
+
+  function load(url, push) {
+    var target = rewrite(url);
+    var host = hostOf(target);
+    currentUrl = target;
+    addr.value = target;
+    if (BLOCKED.indexOf(host) !== -1) { showNotice(target); syncNav(); return; }
+    hideNotice();
+    web.src = target;
+    if (push !== false) { stack = stack.slice(0, idx + 1); stack.push(target); idx = stack.length - 1; }
+    syncNav();
+    clearTimeout(watchdog);
+    watchdog = setTimeout(function () {
+      showNotice(target, 'This page didn\u2019t load on the PC\u2019s screen. The site may not allow opening inside another app, or the connection failed. You can open it in a real tab instead.');
+    }, 9000);
+  }
+
+  web.addEventListener('load', function () { clearTimeout(watchdog); });
+  function syncNav() { document.getElementById('back').disabled = idx <= 0; }
+  document.getElementById('back').onclick = function () { if (idx > 0) { idx--; load(stack[idx], false); } };
+  document.getElementById('go').onclick = function () { var u = toUrl(addr.value); if (u) load(u); };
+  addr.addEventListener('keydown', function (e) { if (e.key === 'Enter') { var u = toUrl(addr.value); if (u) load(u); } });
+  document.getElementById('openTab').onclick = function () { window.open(notice.dataset.url || currentUrl, '_blank'); };
+  document.getElementById('goBack').onclick = function () { hideNotice(); if (idx > 0) { idx--; load(stack[idx], false); } };
+
+  // Other PC screens (e.g. a link layer) can send the browser places.
+  window.__vpcBrowserGo = function (raw) { var u = toUrl(raw); if (u) load(u); };
+
+  web.src = BLANK;
+  syncNav();
+</script>
+</body>
+</html>
