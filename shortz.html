@@ -188,14 +188,100 @@
 
   var player = document.getElementById('player'), idle = document.getElementById('playerIdle'),
       now = document.getElementById('nowPlaying');
+  /* PLAY AT ALL TIMES (his law, Fix 16): once he starts a title it
+     keeps playing no matter where he looks in the PC. The engine
+     never hides this page's frame; and if the embed itself pauses
+     for a reason that is NOT his own tap (players auto-pause when
+     they think they've left the screen), the guard puts it back —
+     while this screen's state is "playing", a pause he didn't ask
+     for doesn't stand. His own pause always does: tapping into the
+     video touches this page / blurs this window, and the guard
+     stands down around any touch. */
+  var wantPlay = false, lastTouchAt = 0, curYtId = null;
+  function touched(){ lastTouchAt = Date.now(); }
+  document.addEventListener('pointerdown', touched, true);
+  document.addEventListener('touchstart', touched, true);
+  window.addEventListener('blur', touched, true);
+
+  function ytIdOf(url){
+    var m = /youtube(?:-nocookie)?\.com\/embed\/([\w-]{6,})/.exec(url || '');
+    if (m) return m[1];
+    m = /youtu\.be\/([\w-]{6,})/.exec(url || '');
+    return m ? m[1] : null;
+  }
+
+  /* YouTube IFrame API, loaded lazily on the first YouTube title.
+     If it can't load (offline / blocked), playback still works the
+     plain way — the guard simply has no API to hold. */
+  var ytApi = 'idle', ytPlayer = null;   // idle | loading | ready | failed
+  function ensureYtApi(){
+    if (ytApi !== 'idle') return;
+    if (window.YT && YT.Player){ ytApi = 'ready'; bindYt(); return; }
+    ytApi = 'loading';
+    var prev = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = function(){
+      if (prev) prev();
+      ytApi = 'ready'; bindYt();
+    };
+    var s = document.createElement('script');
+    s.src = 'https://www.youtube.com/iframe_api';
+    s.onerror = function(){ if (ytApi === 'loading') ytApi = 'failed'; };
+    document.head.appendChild(s);
+    setTimeout(function(){ if (ytApi === 'loading') ytApi = 'failed'; }, 6000);
+  }
+  function bindYt(){
+    if (!curYtId || ytPlayer) return;
+    try {
+      ytPlayer = new YT.Player('player', { events: {
+        'onReady': function(){ player = document.getElementById('player'); },
+        'onStateChange': onYtState
+      }});
+    } catch (e) { ytPlayer = null; }
+  }
+  function onYtState(e){
+    if (!wantPlay || !ytPlayer) return;
+    if (e.data === 0){ wantPlay = false; return; }          // ENDED is real
+    if (e.data === 2 && Date.now() - lastTouchAt > 1500){   // PAUSED, not his tap
+      try { ytPlayer.playVideo(); } catch (err) {}
+    }
+  }
+  setInterval(function(){
+    if (!wantPlay || !ytPlayer || !curYtId) return;
+    if (Date.now() - lastTouchAt <= 1500) return;
+    try { if (ytPlayer.getPlayerState() === 2) ytPlayer.playVideo(); } catch (e) {}
+  }, 1200);
+
+  /* Read-only playback state for the PC's own status surface. */
+  window.__vpcShortzState = function(){
+    var st = { wantPlay: wantPlay, ytId: curYtId, yt: null, t: null };
+    if (ytPlayer && ytPlayer.getPlayerState){
+      try { st.yt = ytPlayer.getPlayerState(); st.t = ytPlayer.getCurrentTime(); } catch (e) {}
+    }
+    return st;
+  };
+
   function play(url, title){
     if (!url) return;
-    player.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'autoplay=1&rel=0';
+    wantPlay = true; lastTouchAt = Date.now();
+    player = document.getElementById('player');
+    curYtId = ytIdOf(url);
+    var viaApi = false;
+    if (curYtId && ytPlayer && ytPlayer.loadVideoById){
+      try { ytPlayer.loadVideoById(curYtId); viaApi = true; } catch (e) { viaApi = false; }
+    }
+    if (!viaApi){
+      if (!curYtId) ytPlayer = null;   // a non-YouTube embed replaces the frame; the API binding dies with it
+      var extra = 'autoplay=1&rel=0' + (curYtId ? '&enablejsapi=1&playsinline=1' : '');
+      player.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + extra;
+      if (curYtId){ if (ytApi === 'ready') bindYt(); else ensureYtApi(); }
+    }
     player.style.display = 'block'; idle.style.display = 'none';
-    now.textContent = '▶ Now playing: ' + title;
+    now.textContent = '\u25b6 Now playing: ' + title;
     closeCard();
     window.scrollTo(0, 0);
   }
+
+
 })();
 </script>
 </body>

@@ -1,1 +1,224 @@
-{"schema": 1, "generated_at": "2026-10-31T14:31:49.210957+00:00", "projects": [{"id": "shortz", "name": "Shortz VS", "what": "Goal ID: goal_38a13387c553 Goal slug: shortz-vs-merch-store", "status": "live build 1793456052", "version": "1793456052", "latest_activity": "2026-10-31T14:14:41.454883+00:00", "goal": "Shortz VS merch store", "source": "/home/hatch/workspace/shortz-tv/app/version.txt"}, {"id": "abr", "name": "Auto Battle Royal", "what": "Goal ID: goal_d257341b269b Goal slug: auto-battle-royal", "status": "published build v9.20261030.1", "version": "v9.20261030.1", "latest_activity": "2026-10-31T14:31:04.106073+00:00", "goal": "Auto Battle Royal", "source": "/home/hatch/workspace/auto-battle-royal-pages/version.txt"}, {"id": "highlight_hub", "name": "Highlight Hub", "what": "Goal ID: goal_579059b4750f Goal slug: highlight-hub-sports-notification-app", "status": "APK v1.0.3 (code 4)", "version": "1.0.3", "latest_activity": "2026-09-18T18:01:02.720842+00:00", "goal": "Highlight Hub sports notification app", "source": "/home/hatch/workspace/highlight-hub-app/app/build.gradle.kts"}, {"id": "joust", "name": "JOUST", "what": "Goal ID: goal_fef9cc0719db Goal slug: joust-original-ai-moba", "status": "JOUST \u2014 The Gate (Playable Prototype)", "version": null, "latest_activity": "2026-10-25T23:09:05.347949+00:00", "goal": "JOUST original AI MOBA", "source": "/home/hatch/workspace/shortz-tv/app/joust/index.html"}, {"id": "championships", "name": "The Championships", "what": "Goal ID: goal_386ed0e87e64 Goal slug: championships-facebook-instant-games-submission", "status": "server package v0.1.0", "version": "0.1.0", "latest_activity": "2026-09-18T00:03:04.149396+00:00", "goal": "Championships Facebook Instant Games submission", "source": "/home/hatch/workspace/championships-server/package.json"}, {"id": "agent_office", "name": "Agent Office / Cre8tor VibeZ HQ", "what": "Goal ID: goal_53c247f226c6 Goal slug: agent-office-side-view", "status": "shipped build v51, 7 crew on the roster", "version": "v51", "latest_activity": "2026-10-30T01:08:47.216331+00:00", "goal": "Agent Office Side View", "source": "/home/hatch/workspace/your_files/agent-office/agent-office.html"}], "goals": [{"slug": "virtual-pc-mission-control-desk", "title": "Virtual PC mission control desk", "what": "Goal ID: goal_f9a186cc81c1 Goal slug: virtual-pc-mission-control-desk", "updated": "2026-10-31T07:57:00.245246+00:00"}, {"slug": "tales-in-the-dark-youtube-channel", "title": "Tales in the Dark YouTube channel", "what": "Goal ID: goal_aec8dbefd29a Goal slug: tales-in-the-dark-youtube-channel", "updated": "2026-10-31T01:40:34.255127+00:00"}, {"slug": "auto-battle-royal", "title": "Auto Battle Royal", "what": "Goal ID: goal_d257341b269b Goal slug: auto-battle-royal", "updated": "2026-10-31T01:40:34.154408+00:00"}, {"slug": "shortz-vs-merch-store", "title": "Shortz VS merch store", "what": "Goal ID: goal_38a13387c553 Goal slug: shortz-vs-merch-store", "updated": "2026-10-30T10:49:26.366677+00:00"}, {"slug": "agent-office-side-view", "title": "Agent Office Side View", "what": "Goal ID: goal_53c247f226c6 Goal slug: agent-office-side-view", "updated": "2026-10-30T10:49:26.138692+00:00"}, {"slug": "cre8tor-vibez-hq", "title": "Cre8tor VibeZ HQ", "what": "Goal ID: goal_977559440afd Goal slug: cre8tor-vibez-hq", "updated": "2026-10-28T01:30:24.650730+00:00"}, {"slug": "joust-original-ai-moba", "title": "JOUST original AI MOBA", "what": "Goal ID: goal_fef9cc0719db Goal slug: joust-original-ai-moba", "updated": "2026-10-26T03:07:09.310067+00:00"}, {"slug": "echo-protocol-megajam-entry", "title": "Echo Protocol MegaJam entry", "what": "Goal ID: goal_97a5f1f5a58f Goal slug: echo-protocol-megajam-entry", "updated": "2026-10-26T03:07:09.150068+00:00"}, {"slug": "computer-brain", "title": "Computer Brain", "what": "Goal ID: goal_4846054f19c2 Goal slug: computer-brain", "updated": "2026-10-26T00:36:18.649920+00:00"}, {"slug": "premium-vibez-website", "title": "Premium VibeZ website", "what": "Goal ID: goal_069031dc1576 Goal slug: premium-vibez-website", "updated": "2026-10-24T02:40:22.778569+00:00"}, {"slug": "legacy-family-series-decision", "title": "Legacy family series decision", "what": "Goal ID: goal_89b5f2fc35a9 Goal slug: legacy-family-series-decision", "updated": "2026-10-23T02:17:31.220148+00:00"}, {"slug": "private-groups-social-app-mockup", "title": "Private groups social app mockup", "what": "Goal ID: goal_018d19d59c24 Goal slug: private-groups-social-app-mockup", "updated": "2026-10-22T20:14:24.530941+00:00"}], "today": {"date": "2026-10-31", "items": [{"kind": "goal", "name": "Virtual PC mission control desk", "updated": "2026-10-31T07:57:00.245246+00:00"}, {"kind": "project", "name": "Shortz VS", "updated": "2026-10-31T14:14:41.454883+00:00"}, {"kind": "project", "name": "Auto Battle Royal", "updated": "2026-10-31T14:31:04.106073+00:00"}], "log_topics": ["Verified extraction \u2014 00:27 UTC (run sirun_32b0e1b05bc14dbabe898606a5e16565)", "Verified extraction \u2014 02:27 UTC (run sirun_7c945966a0f94ebe8afc75fb34eedef4)", "2026-10-31 ~00:00 CDT \u2014 computer-brain-background-think cycle (window 23:00 Oct 30 \u2013 00:00 Oct 31)", "2026-10-31 ~00:02 CDT \u2014 top10-daily-refresh", "2026-10-31 ~00:03 CDT \u2014 computer-brain-self-study run (Mode A \u2014 INTERROGATE)", "2026-10-31 ~00:07 CDT \u2014 computer-brain-bounce run", "2026-10-31 ~00:10 CDT \u2014 main chat: Godot office ULTRA render, execution state (events 2026-10-30 evening CDT)", "2026-10-31 ~00:10 CDT \u2014 computer-brain-memory-sync run (job: computer-brain-memory-sync, scheduled 00:10:56 CDT)"], "log_file": "/home/hatch/memory/2026-10-31.md"}, "live": {"metrics": {"titles": 75770, "episodes": 113326, "clips_total": 6, "clips_posted": 2}, "shortz_build": "1793456052", "crew": [{"id": "RICO", "role": "Clipper Captain"}, {"id": "SANAA", "role": "Catalog Hunter"}, {"id": "DEX", "role": "Watchdog"}, {"id": "MILO", "role": "Game Tester"}, {"id": "MARCO", "role": "Clipper"}, {"id": "DEV", "role": "Clipper"}, {"id": "TESSA", "role": "Rankings"}], "clips": {"total": 6, "posted": 2}}, "sales": {"status": "not_wired", "figures": null, "needed": ["Amaze store sales (his store account \u2014 export or API)", "Shopify store sales, if/when a store is live", "Stripe payouts, if/when Stripe is taking payments"], "note": "Sales figures live in his store accounts; no workspace file carries them. Jarvis answers 'sales aren't wired yet' \u2014 figures are never invented."}}
+{
+ "schema": 1,
+ "generated_at": "2026-10-31T16:53:58.998307+00:00",
+ "projects": [
+  {
+   "id": "shortz",
+   "name": "Shortz VS",
+   "what": "Goal ID: goal_38a13387c553 Goal slug: shortz-vs-merch-store",
+   "status": "live build 1793464696",
+   "version": "1793464696",
+   "latest_activity": "2026-10-31T16:38:16.050212+00:00",
+   "goal": "Shortz VS merch store",
+   "source": "/home/hatch/workspace/shortz-tv/app/version.txt"
+  },
+  {
+   "id": "abr",
+   "name": "Auto Battle Royal",
+   "what": "Goal ID: goal_d257341b269b Goal slug: auto-battle-royal",
+   "status": "published build v9.20261030.1",
+   "version": "v9.20261030.1",
+   "latest_activity": "2026-10-31T14:31:04.106073+00:00",
+   "goal": "Auto Battle Royal",
+   "source": "/home/hatch/workspace/auto-battle-royal-pages/version.txt"
+  },
+  {
+   "id": "highlight_hub",
+   "name": "Highlight Hub",
+   "what": "Goal ID: goal_579059b4750f Goal slug: highlight-hub-sports-notification-app",
+   "status": "APK v1.0.3 (code 4)",
+   "version": "1.0.3",
+   "latest_activity": "2026-09-18T18:01:02.720842+00:00",
+   "goal": "Highlight Hub sports notification app",
+   "source": "/home/hatch/workspace/highlight-hub-app/app/build.gradle.kts"
+  },
+  {
+   "id": "joust",
+   "name": "JOUST",
+   "what": "Goal ID: goal_fef9cc0719db Goal slug: joust-original-ai-moba",
+   "status": "JOUST — The Gate (Playable Prototype)",
+   "version": null,
+   "latest_activity": "2026-10-25T23:09:05.347949+00:00",
+   "goal": "JOUST original AI MOBA",
+   "source": "/home/hatch/workspace/shortz-tv/app/joust/index.html"
+  },
+  {
+   "id": "championships",
+   "name": "The Championships",
+   "what": "Goal ID: goal_386ed0e87e64 Goal slug: championships-facebook-instant-games-submission",
+   "status": "server package v0.1.0",
+   "version": "0.1.0",
+   "latest_activity": "2026-09-18T00:03:04.149396+00:00",
+   "goal": "Championships Facebook Instant Games submission",
+   "source": "/home/hatch/workspace/championships-server/package.json"
+  },
+  {
+   "id": "agent_office",
+   "name": "Agent Office / Cre8tor VibeZ HQ",
+   "what": "Goal ID: goal_53c247f226c6 Goal slug: agent-office-side-view",
+   "status": "shipped build v51, 7 crew on the roster",
+   "version": "v51",
+   "latest_activity": "2026-10-30T01:08:47.216331+00:00",
+   "goal": "Agent Office Side View",
+   "source": "/home/hatch/workspace/your_files/agent-office/agent-office.html"
+  }
+ ],
+ "goals": [
+  {
+   "slug": "virtual-pc-mission-control-desk",
+   "title": "Virtual PC mission control desk",
+   "what": "Goal ID: goal_f9a186cc81c1 Goal slug: virtual-pc-mission-control-desk",
+   "updated": "2026-10-31T07:57:00.245246+00:00"
+  },
+  {
+   "slug": "tales-in-the-dark-youtube-channel",
+   "title": "Tales in the Dark YouTube channel",
+   "what": "Goal ID: goal_aec8dbefd29a Goal slug: tales-in-the-dark-youtube-channel",
+   "updated": "2026-10-31T01:40:34.255127+00:00"
+  },
+  {
+   "slug": "auto-battle-royal",
+   "title": "Auto Battle Royal",
+   "what": "Goal ID: goal_d257341b269b Goal slug: auto-battle-royal",
+   "updated": "2026-10-31T01:40:34.154408+00:00"
+  },
+  {
+   "slug": "shortz-vs-merch-store",
+   "title": "Shortz VS merch store",
+   "what": "Goal ID: goal_38a13387c553 Goal slug: shortz-vs-merch-store",
+   "updated": "2026-10-30T10:49:26.366677+00:00"
+  },
+  {
+   "slug": "agent-office-side-view",
+   "title": "Agent Office Side View",
+   "what": "Goal ID: goal_53c247f226c6 Goal slug: agent-office-side-view",
+   "updated": "2026-10-30T10:49:26.138692+00:00"
+  },
+  {
+   "slug": "cre8tor-vibez-hq",
+   "title": "Cre8tor VibeZ HQ",
+   "what": "Goal ID: goal_977559440afd Goal slug: cre8tor-vibez-hq",
+   "updated": "2026-10-28T01:30:24.650730+00:00"
+  },
+  {
+   "slug": "joust-original-ai-moba",
+   "title": "JOUST original AI MOBA",
+   "what": "Goal ID: goal_fef9cc0719db Goal slug: joust-original-ai-moba",
+   "updated": "2026-10-26T03:07:09.310067+00:00"
+  },
+  {
+   "slug": "echo-protocol-megajam-entry",
+   "title": "Echo Protocol MegaJam entry",
+   "what": "Goal ID: goal_97a5f1f5a58f Goal slug: echo-protocol-megajam-entry",
+   "updated": "2026-10-26T03:07:09.150068+00:00"
+  },
+  {
+   "slug": "computer-brain",
+   "title": "Computer Brain",
+   "what": "Goal ID: goal_4846054f19c2 Goal slug: computer-brain",
+   "updated": "2026-10-26T00:36:18.649920+00:00"
+  },
+  {
+   "slug": "premium-vibez-website",
+   "title": "Premium VibeZ website",
+   "what": "Goal ID: goal_069031dc1576 Goal slug: premium-vibez-website",
+   "updated": "2026-10-24T02:40:22.778569+00:00"
+  },
+  {
+   "slug": "legacy-family-series-decision",
+   "title": "Legacy family series decision",
+   "what": "Goal ID: goal_89b5f2fc35a9 Goal slug: legacy-family-series-decision",
+   "updated": "2026-10-23T02:17:31.220148+00:00"
+  },
+  {
+   "slug": "private-groups-social-app-mockup",
+   "title": "Private groups social app mockup",
+   "what": "Goal ID: goal_018d19d59c24 Goal slug: private-groups-social-app-mockup",
+   "updated": "2026-10-22T20:14:24.530941+00:00"
+  }
+ ],
+ "today": {
+  "date": "2026-10-31",
+  "items": [
+   {
+    "kind": "goal",
+    "name": "Virtual PC mission control desk",
+    "updated": "2026-10-31T07:57:00.245246+00:00"
+   },
+   {
+    "kind": "project",
+    "name": "Shortz VS",
+    "updated": "2026-10-31T16:38:16.050212+00:00"
+   },
+   {
+    "kind": "project",
+    "name": "Auto Battle Royal",
+    "updated": "2026-10-31T14:31:04.106073+00:00"
+   }
+  ],
+  "log_topics": [
+   "Verified extraction — 00:27 UTC (run sirun_32b0e1b05bc14dbabe898606a5e16565)",
+   "Verified extraction — 02:27 UTC (run sirun_7c945966a0f94ebe8afc75fb34eedef4)",
+   "2026-10-31 ~00:00 CDT — computer-brain-background-think cycle (window 23:00 Oct 30 – 00:00 Oct 31)",
+   "2026-10-31 ~00:02 CDT — top10-daily-refresh",
+   "2026-10-31 ~00:03 CDT — computer-brain-self-study run (Mode A — INTERROGATE)",
+   "2026-10-31 ~00:07 CDT — computer-brain-bounce run",
+   "2026-10-31 ~00:10 CDT — main chat: Godot office ULTRA render, execution state (events 2026-10-30 evening CDT)",
+   "2026-10-31 ~00:10 CDT — computer-brain-memory-sync run (job: computer-brain-memory-sync, scheduled 00:10:56 CDT)"
+  ],
+  "log_file": "/home/hatch/memory/2026-10-31.md"
+ },
+ "live": {
+  "metrics": {
+   "titles": 75771,
+   "episodes": 113329,
+   "clips_total": 6,
+   "clips_posted": 2
+  },
+  "shortz_build": "1793464696",
+  "crew": [
+   {
+    "id": "RICO",
+    "role": "Clipper Captain"
+   },
+   {
+    "id": "SANAA",
+    "role": "Catalog Hunter"
+   },
+   {
+    "id": "DEX",
+    "role": "Watchdog"
+   },
+   {
+    "id": "MILO",
+    "role": "Game Tester"
+   },
+   {
+    "id": "MARCO",
+    "role": "Clipper"
+   },
+   {
+    "id": "DEV",
+    "role": "Clipper"
+   },
+   {
+    "id": "TESSA",
+    "role": "Rankings"
+   }
+  ],
+  "clips": {
+   "total": 6,
+   "posted": 2
+  }
+ },
+ "sales": {
+  "status": "not_wired",
+  "figures": null,
+  "needed": [
+   "Amaze store sales (his store account — export or API)",
+   "Shopify store sales, if/when a store is live",
+   "Stripe payouts, if/when Stripe is taking payments"
+  ],
+  "note": "Sales figures live in his store accounts; no workspace file carries them. Jarvis answers 'sales aren't wired yet' — figures are never invented."
+ }
+}
