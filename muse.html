@@ -507,6 +507,11 @@
         return 'Android won\'t ask again — turn the mic on here: Settings → Apps → Virtual PC → Permissions → Microphone → Allow, then tap LIVE TALK.';
       case 'not-allowed':
         return 'Microphone permission is off — allow the mic when Android asks, then tap LIVE TALK again. Typing works below, and I\'ll still answer.';
+      case 'service-refused':
+        /* APK 1.8: the recognizer answered ERROR_INSUFFICIENT_PERMISSIONS
+           while the app HOLDS the mic grant — a service refusing, not a
+           permission fact. The copy must never claim the mic is off. */
+        return 'The phone\'s speech service refused to listen, even though the mic is allowed (error ' + (code || '9') + ') — type below and I\'ll still answer, or try LIVE TALK again in a moment.';
       case 'recognizer-busy':
         return 'The speech service is busy right now — give it a breath and tap LIVE TALK again, or type below.';
       case 'no-match':
