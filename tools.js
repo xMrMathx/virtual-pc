@@ -834,3 +834,30 @@
     });
   }, 400);
 })();
+
+/* ---- Full Internet: the generalized full-view trip. The D14 block
+   above trips a tracked APP to its standalone home for sign-in; the
+   browser's door needs the same move for an ARBITRARY url: this view
+   goes top-level to the url (inside the APK that stays in the same
+   WebView; in a browser it is a same-tab navigation), a return
+   marker is dropped, and the back button returns to the PC, where
+   the browser restores its tabs from its own saved state. Nothing
+   in the D14 block changes. ---- */
+(function () {
+  'use strict';
+  if (window.__vpcUrlTrip) return;
+  try {
+    var ret = localStorage.getItem('vpc_url_return');
+    if (ret) {
+      localStorage.removeItem('vpc_url_return');
+      console.log('VPC TRIP: back from a full-view trip (' + ret + ') — the browser restores its tabs from its own saved state');
+    }
+  } catch (e) {}
+  window.__vpcUrlTrip = function (url) {
+    if (!url) return false;
+    try { localStorage.setItem('vpc_url_return', JSON.stringify({ url: url, t: Date.now() })); } catch (e) {}
+    console.log('VPC TRIP: full view — ' + url + ' becomes the whole view (top-level, same view); back returns to the PC');
+    window.location.href = url;
+    return true;
+  };
+})();

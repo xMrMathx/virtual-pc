@@ -9,116 +9,627 @@
   html, body { height:100%; }
   body { background:#05060a; color:#dfe9ff; font-family:system-ui, "Segoe UI", Roboto, sans-serif;
          display:flex; flex-direction:column; overflow:hidden; }
-  #bar { display:flex; align-items:center; gap:8px; padding:8px 10px; background:#0b111e;
+
+  /* ---------- tab strip ---------- */
+  #tabs { display:flex; align-items:flex-end; gap:5px; padding:6px 8px 0; background:#080d17;
+          flex:0 0 auto; overflow-x:auto; overflow-y:hidden; scrollbar-width:none; }
+  #tabs::-webkit-scrollbar { display:none; }
+  .tab { display:flex; align-items:center; gap:7px; height:38px; padding:0 8px 0 13px; max-width:190px; min-width:0;
+         border-radius:11px 11px 0 0; border:1.5px solid rgba(126,231,255,.16); border-bottom:0;
+         background:#0a1220; color:#8fa5c8; font-size:13px; font-weight:700; cursor:pointer; flex:0 1 auto; }
+  .tab.on { background:#101b30; color:#fff; border-color:rgba(0,240,255,.45); }
+  .tab .tt { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+  .tab .tx { width:24px; height:24px; border-radius:7px; border:0; background:transparent; color:#7d92b5;
+             font-size:14px; font-weight:900; cursor:pointer; flex:0 0 auto; line-height:1; }
+  .tab .tx:active { background:#3a1620; color:#ff8296; }
+  #newTab { width:38px; height:38px; border-radius:11px 11px 0 0; border:1.5px solid rgba(126,231,255,.16); border-bottom:0;
+            background:#0a1220; color:#7ee7ff; font-size:19px; font-weight:800; cursor:pointer; flex:0 0 auto; }
+  #newTab:active { background:#14304a; }
+
+  /* ---------- toolbar ---------- */
+  #bar { display:flex; align-items:center; gap:7px; padding:7px 9px; background:#0b111e;
          border-bottom:1.5px solid rgba(0,240,255,.35); flex:0 0 auto; }
-  #back { width:46px; height:46px; border-radius:10px; border:1.5px solid rgba(126,231,255,.35);
-          background:#0e1626; color:#7ee7ff; font-size:19px; cursor:pointer; flex:0 0 auto; }
-  #back:active { background:#14304a; }
-  #back:disabled { opacity:.35; cursor:default; }
-  #addr { flex:1; height:46px; border-radius:23px; border:1.5px solid rgba(126,231,255,.35);
-          background:#070c16; color:#fff; font-size:16px; padding:0 18px; outline:none; min-width:40px; }
+  .navb { width:44px; height:44px; border-radius:10px; border:1.5px solid rgba(126,231,255,.35);
+          background:#0e1626; color:#7ee7ff; font-size:17px; cursor:pointer; flex:0 0 auto; padding:0; }
+  .navb:active { background:#14304a; }
+  .navb:disabled { opacity:.32; cursor:default; }
+  #addr { flex:1; height:44px; border-radius:22px; border:1.5px solid rgba(126,231,255,.35);
+          background:#070c16; color:#fff; font-size:15px; padding:0 16px; outline:none; min-width:30px; }
   #addr:focus { border-color:#00f0ff; }
-  #go { height:46px; padding:0 20px; border-radius:23px; border:0; cursor:pointer; flex:0 0 auto;
-        background:#00b8d9; color:#04121a; font-weight:800; font-size:15px; }
-  #web { flex:1; width:100%; border:0; background:#0a0e16; }
-  #notice { position:absolute; inset:63px 0 0 0; background:#0b111e; display:none;
-            flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:24px; }
-  #notice .big { font-size:clamp(19px, 2.6vw, 30px); font-weight:800; color:#ffd479; letter-spacing:1px; }
-  #notice .small { margin-top:10px; color:#8fa5c8; font-size:clamp(13px, 1.5vw, 16px); max-width:520px; line-height:1.5; }
-  #notice .row { display:flex; gap:10px; margin-top:22px; flex-wrap:wrap; justify-content:center; }
-  #notice button { height:48px; padding:0 20px; border-radius:11px; font-weight:800; font-size:14px; cursor:pointer; }
-  #openTab { background:#ffb800; color:#191002; border:0; }
-  #goBack { background:#0e1626; color:#7ee7ff; border:1.5px solid rgba(126,231,255,.5); }
+  #go { height:44px; padding:0 17px; border-radius:22px; border:0; cursor:pointer; flex:0 0 auto;
+        background:#00b8d9; color:#04121a; font-weight:800; font-size:14px; }
+
+  /* ---------- page area ---------- */
+  #pages { flex:1; position:relative; margin:4px; border:1.5px solid rgba(126,231,255,.14);
+           border-radius:8px; overflow:hidden; background:#0a0e16; }
+  #pages iframe { position:absolute; inset:0; width:100%; height:100%; border:0; background:#fff; display:none; }
+  #pages iframe.on { display:block; }
+  #veil { position:absolute; left:0; right:0; top:0; height:3px; background:transparent; display:none; z-index:5; }
+  #veil .fill { height:100%; width:38%; background:#00f0ff; border-radius:2px;
+                animation:vslide 1.1s ease-in-out infinite alternate; box-shadow:0 0 9px rgba(0,240,255,.8); }
+  @keyframes vslide { from { margin-left:0; } to { margin-left:62%; } }
+  #loadTag { position:absolute; top:10px; left:50%; transform:translateX(-50%); z-index:5; display:none;
+             background:rgba(7,12,22,.92); border:1.5px solid rgba(0,240,255,.4); color:#bfeaff;
+             font-size:12.5px; font-weight:700; letter-spacing:.6px; padding:6px 14px; border-radius:16px; }
+
+  /* ---------- start page (empty tab) ---------- */
+  #start { position:absolute; inset:0; display:none; flex-direction:column; align-items:center;
+           justify-content:center; gap:8px; padding:20px; text-align:center; background:#070b14; z-index:3; }
+  #start .big { font-size:clamp(19px,3vw,27px); font-weight:800; color:#7ee7ff; letter-spacing:2.5px; }
+  #start .small { color:#8fa5c8; font-size:clamp(12.5px,1.6vw,15px); max-width:430px; line-height:1.5; }
+  #start .tiles { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:14px; }
+  #start .tile { min-width:118px; padding:14px 12px; border-radius:13px; border:1.5px solid rgba(126,231,255,.3);
+                 background:#0e1626; color:#dfe9ff; font-weight:800; font-size:14px; cursor:pointer; }
+  #start .tile:active { background:#14304a; border-color:#00f0ff; }
+
+  /* ---------- the door (walled / failed sites) ---------- */
+  #door { position:absolute; inset:0; background:#0b111e; display:none; z-index:4;
+          flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:24px; }
+  #door .big { font-size:clamp(18px, 2.6vw, 29px); font-weight:800; color:#ffd479; letter-spacing:1px; }
+  #door .small { margin-top:10px; color:#8fa5c8; font-size:clamp(13px, 1.5vw, 16px); max-width:520px; line-height:1.5; }
+  #door .row { display:flex; gap:10px; margin-top:22px; flex-wrap:wrap; justify-content:center; }
+  #door button { height:48px; padding:0 20px; border-radius:11px; font-weight:800; font-size:14px; cursor:pointer; }
+  #doorFull { background:#ffb800; color:#191002; border:0; }
+  #doorRetry { background:#0e2a1a; color:#7dffb0; border:1.5px solid rgba(125,255,176,.5); display:none; }
+  #doorBack { background:#0e1626; color:#7ee7ff; border:1.5px solid rgba(126,231,255,.5); }
+
+  /* ---------- transient note ---------- */
+  #note { position:absolute; bottom:12px; left:50%; transform:translateX(-50%); z-index:6; display:none;
+          background:rgba(7,12,22,.94); border:1.5px solid rgba(255,184,0,.55); color:#ffd479;
+          font-size:13px; font-weight:700; padding:8px 16px; border-radius:12px; max-width:92%; text-align:center; }
+
+  /* ---------- compressed chrome: narrow glass (verticals, split halves) ---------- */
+  @media (max-width: 380px) {
+    .navb { width:38px; height:38px; font-size:15px; border-radius:9px; }
+    #go { padding:0 12px; height:38px; }
+    #addr { height:38px; font-size:14px; padding:0 12px; }
+    #bar { gap:5px; padding:6px 6px; }
+    .tab { height:33px; font-size:12px; max-width:128px; padding-left:9px; }
+    #newTab { width:33px; height:33px; }
+    #tabs { padding:5px 5px 0; gap:4px; }
+    #pages { margin:3px; }
+  }
+  @media (max-width: 250px) {
+    #go { display:none; }
+    .tab .tt { max-width:52px; }
+  }
+  @media (max-height: 330px) {
+    .tab { height:29px; font-size:11.5px; }
+    #newTab { width:29px; height:29px; font-size:16px; }
+    .navb { width:35px; height:35px; }
+    #addr, #go { height:35px; }
+    #bar { padding:5px 7px; }
+  }
 </style>
 </head>
 <body>
+  <div id="tabs"></div>
   <div id="bar">
-    <button id="back" title="Back">◀</button>
-    <input id="addr" type="text" placeholder="Search Google or type an address…" autocomplete="off" spellcheck="false">
+    <button class="navb" id="back" title="Back">◀</button>
+    <button class="navb" id="fwd" title="Forward">▶</button>
+    <button class="navb" id="reload" title="Reload">⟳</button>
+    <input id="addr" type="text" placeholder="Search or type an address…" autocomplete="off" spellcheck="false">
     <button id="go">GO</button>
   </div>
-  <iframe id="web" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen></iframe>
-  <div id="notice">
-    <div class="big">THIS SITE WON'T OPEN INSIDE THE PC</div>
-    <div class="small" id="noticeWhy">Some sites lock themselves so they can only open in a full browser tab. The PC can't show this one on its screen — open it in a real tab instead.</div>
-    <div class="row">
-      <button id="openTab">OPEN IN A REAL TAB ↗</button>
-      <button id="goBack">← GO BACK</button>
+  <div id="pages">
+    <div id="veil"><div class="fill"></div></div>
+    <div id="loadTag">LOADING…</div>
+    <div id="start">
+      <div class="big">THE INTERNET</div>
+      <div class="small">Type an address or search words up top — or start from one of these.</div>
+      <div class="tiles">
+        <button class="tile" data-go="https://www.bing.com">🔎 Search</button>
+        <button class="tile" data-go="https://xmrmathx.github.io/shortz-tv/">📺 Shortz TV</button>
+        <button class="tile" data-go="https://xmrmathx.github.io/agent-office/">🏢 The Office</button>
+        <button class="tile" data-go="https://en.wikipedia.org">📖 Wikipedia</button>
+      </div>
     </div>
+    <div id="door">
+      <div class="big" id="doorTitle">THIS SITE WON'T OPEN INSIDE THE PC</div>
+      <div class="small" id="doorWhy"></div>
+      <div class="row">
+        <button id="doorFull">OPEN FULL VIEW ↗</button>
+        <button id="doorRetry">TRY AGAIN</button>
+        <button id="doorBack">← GO BACK</button>
+      </div>
+    </div>
+    <div id="note"></div>
   </div>
 <script>
-  var web = document.getElementById('web');
-  var addr = document.getElementById('addr');
-  var notice = document.getElementById('notice');
-  var BLANK = 'about:blank';
-  var stack = [], idx = -1, watchdog = 0, currentUrl = '';
+(function () {
+  'use strict';
 
-  // Sites that refuse to be framed (X-Frame-Options / frame-ancestors).
-  var BLOCKED = ['google.com', 'www.google.com', 'facebook.com', 'www.facebook.com',
-    'instagram.com', 'www.instagram.com', 'x.com', 'twitter.com', 'www.twitter.com',
-    'netflix.com', 'www.netflix.com', 'chase.com', 'www.chase.com',
-    'bankofamerica.com', 'www.bankofamerica.com', 'wellsfargo.com', 'www.wellsfargo.com',
-    'paypal.com', 'www.paypal.com', 'accounts.google.com'];
+  /* ================================================================
+     FULL INTERNET — the PC's real browser.
+     Tabs with per-tab histories; an omnibox that navigates or
+     searches; results render ON THE GLASS via Bing (engine verdict
+     below); frame-walled targets get the DOOR — a clean card whose
+     OPEN FULL VIEW rides the shell's top-level trip
+     (window.top.__vpcUrlTrip, the generalized D14 trip) and whose
+     back button returns here with this tab exactly as it was.
 
+     SEARCH ENGINE VERDICT (measured 2026-11-01, response headers on
+     the real search endpoints + this project's framing tests):
+       Google search        X-Frame-Options: SAMEORIGIN   -> walled
+       Google &igu=1        no XFO, but 302 -> 429 rate-limit from
+                            a cold IP; unofficial bypass, rejected
+       DuckDuckGo html/lite frame-ancestors 'self' +
+                            X-Frame-Options: SAMEORIGIN   -> walled
+       Ecosia               403 + SAMEORIGIN              -> walled
+       Mojeek               frame-ancestors 'none'        -> walled
+       Startpage            frame-ancestors 'self'         -> walled
+       Bing                 no XFO, CSP carries NO
+                            frame-ancestors               -> ON GLASS
+     Bing is also the incumbent: the previous one-bar browser
+     shipped on it after its own framing check.
+     ================================================================ */
+  var SEARCH_URL = 'https://www.bing.com/search?q=';
+  var RSS_URL = 'https://www.bing.com/search?format=rss&q=';
+  var LS_KEY = 'vpc_browser2_state';
+  var MAX_TABS = 8;
+  var LOAD_WATCHDOG_MS = 12000;
+
+  /* Sites that refuse to be framed (X-Frame-Options / frame-ancestors),
+     matched by host or any subdomain. A target on this list never gets
+     its iframe pointed at the wall — the door card shows instead.
+     YouTube watch pages are rewritten to the frameable nocookie
+     embed BEFORE this check; youtube-nocookie.com is not listed. */
+  var WALLED = ['google.com', 'facebook.com', 'instagram.com', 'x.com', 'twitter.com',
+    'netflix.com', 'hulu.com', 'disneyplus.com', 'youtube.com', 'amazon.com',
+    'github.com', 'reddit.com', 'paypal.com', 'chase.com', 'bankofamerica.com',
+    'wellsfargo.com', 'capitalone.com', 'americanexpress.com', 'fidelity.com',
+    'vanguard.com', 'schwab.com', 'login.microsoftonline.com', 'appleid.apple.com',
+    'accounts.google.com', 'open.spotify.com', 'twitch.tv'];
+
+  var pagesEl = document.getElementById('pages');
+  var tabsEl = document.getElementById('tabs');
+  var addrEl = document.getElementById('addr');
+  var veil = document.getElementById('veil');
+  var loadTag = document.getElementById('loadTag');
+  var startEl = document.getElementById('start');
+  var doorEl = document.getElementById('door');
+  var noteEl = document.getElementById('note');
+
+  var seq = 1;
+  var S = { tabs: [], active: 0 };
+  var lastHook = { ok: null, what: '', detail: '' };
+  var hookDetail = '';
+  var noteTimer = 0, saveTimer = 0;
+
+  /* ---------------- state ---------------- */
+  function newTab(url) {
+    return { id: seq++, stack: [], idx: -1, title: 'New Tab', door: null,
+             results: null, resultsFor: '', f: null, watchdog: 0, loading: false };
+  }
+  function activeTab() { return S.tabs[S.active] || null; }
+  function tabUrl(t) { return (t && t.idx >= 0) ? t.stack[t.idx] : ''; }
+
+  function frameFor(t) {
+    if (t.f) return t.f;
+    var f = document.createElement('iframe');
+    f.setAttribute('allow', 'autoplay; fullscreen; encrypted-media; picture-in-picture; clipboard-write');
+    f.allowFullscreen = true;
+    f.addEventListener('load', function () { onFrameLoad(t); });
+    pagesEl.insertBefore(f, veil);
+    t.f = f;
+    return f;
+  }
+
+  function save() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function () {
+      try {
+        var out = { active: S.active, tabs: S.tabs.map(function (t) {
+          return { stack: t.stack, idx: t.idx, title: t.title,
+                   door: t.door ? { url: t.door.url, why: t.door.why } : null,
+                   resultsFor: t.resultsFor,
+                   results: t.results ? t.results.slice(0, 10) : null };
+        }) };
+        localStorage.setItem(LS_KEY, JSON.stringify(out));
+      } catch (e) {}
+    }, 150);
+  }
+  function restore() {
+    try {
+      var raw = localStorage.getItem(LS_KEY);
+      if (!raw) return false;
+      var d = JSON.parse(raw);
+      if (!d || !d.tabs || !d.tabs.length) return false;
+      S.tabs = d.tabs.map(function (td) {
+        var t = newTab();
+        t.stack = td.stack || []; t.idx = (typeof td.idx === 'number') ? td.idx : (t.stack.length - 1);
+        t.title = td.title || 'New Tab';
+        t.door = td.door || null;
+        t.resultsFor = td.resultsFor || '';
+        t.results = td.results || null;
+        return t;
+      });
+      S.active = Math.min(Math.max(0, d.active || 0), S.tabs.length - 1);
+      /* re-point every restored tab's frame at its current page */
+      S.tabs.forEach(function (t) {
+        var u = tabUrl(t);
+        if (u && !t.door) { t.loading = true; frameFor(t).src = u; armWatchdog(t); }
+      });
+      return true;
+    } catch (e) { return false; }
+  }
+
+  /* ---------------- url smarts ---------------- */
   function hostOf(u) { try { return new URL(u).hostname.toLowerCase(); } catch (e) { return ''; } }
-
+  function isWalled(u) {
+    var h = hostOf(u);
+    if (!h) return false;
+    for (var i = 0; i < WALLED.length; i++) {
+      if (h === WALLED[i] || h.slice(-(WALLED[i].length + 1)) === '.' + WALLED[i]) return true;
+    }
+    return false;
+  }
   function rewrite(u) {
-    // YouTube watch pages refuse framing; the nocookie embed player works.
     var m = u.match(/[?&]v=([\w-]{6,})/);
-    if ((u.indexOf('youtube.com/watch') !== -1) && m) return 'https://www.youtube-nocookie.com/embed/' + m[1] + '?autoplay=1&rel=0';
+    if (u.indexOf('youtube.com/watch') !== -1 && m) return 'https://www.youtube-nocookie.com/embed/' + m[1] + '?autoplay=1&rel=0';
     var y = u.match(/youtu\.be\/([\w-]{6,})/);
     if (y) return 'https://www.youtube-nocookie.com/embed/' + y[1] + '?autoplay=1&rel=0';
     return u;
   }
-
+  function isSearchUrl(u) { return u.indexOf('https://www.bing.com/search') === 0; }
+  function queryOfSearch(u) {
+    var m = u.match(/[?&]q=([^&]*)/);
+    return m ? decodeURIComponent(m[1].replace(/\+/g, ' ')) : '';
+  }
+  /* the omnibox brain: address or search words? */
   function toUrl(raw) {
     raw = (raw || '').trim();
     if (!raw) return '';
     if (/^https?:\/\//i.test(raw)) return raw;
-    if (raw.indexOf(' ') === -1 && raw.indexOf('.') !== -1) return 'https://' + raw;
-    // Search: Google itself refuses to be framed, so searches run
-    // through Bing — the bar is what he sees, the results just work.
-    return 'https://www.bing.com/search?q=' + encodeURIComponent(raw);
+    if (/^(about:|data:)/i.test(raw)) return raw;
+    if (raw.indexOf(' ') === -1 && (raw.indexOf('.') !== -1 || raw.indexOf(':') !== -1)) return 'https://' + raw;
+    return SEARCH_URL + encodeURIComponent(raw);
+  }
+  function toAddress(raw) {
+    raw = (raw || '').trim();
+    if (!raw) return '';
+    if (/^https?:\/\//i.test(raw)) return raw;
+    return 'https://' + raw.replace(/^\/+/, '');
+  }
+  function shortTitle(u, q) {
+    if (q) return '🔎 ' + (q.length > 20 ? q.slice(0, 20) + '…' : q);
+    if (!u) return 'New Tab';
+    var h = hostOf(u);
+    return h || u.slice(0, 22);
   }
 
-  function showNotice(url, why) {
-    clearTimeout(watchdog);
-    document.getElementById('noticeWhy').textContent = why ||
-      'Some sites lock themselves so they can only open in a full browser tab. The PC can\u2019t show this one on its screen \u2014 open it in a real tab instead.';
-    notice.dataset.url = url;
-    notice.style.display = 'flex';
-  }
-  function hideNotice() { notice.style.display = 'none'; }
-
-  function load(url, push) {
-    var target = rewrite(url);
-    var host = hostOf(target);
-    currentUrl = target;
-    addr.value = target;
-    if (BLOCKED.indexOf(host) !== -1) { showNotice(target); syncNav(); return; }
-    hideNotice();
-    web.src = target;
-    if (push !== false) { stack = stack.slice(0, idx + 1); stack.push(target); idx = stack.length - 1; }
-    syncNav();
-    clearTimeout(watchdog);
-    watchdog = setTimeout(function () {
-      showNotice(target, 'This page didn\u2019t load on the PC\u2019s screen. The site may not allow opening inside another app, or the connection failed. You can open it in a real tab instead.');
-    }, 9000);
+  /* ---------------- the trip (full view) ---------------- */
+  function callTrip(url) {
+    try {
+      if (window.top && window.top !== window && typeof window.top.__vpcUrlTrip === 'function') {
+        window.top.__vpcUrlTrip(url); return true;
+      }
+    } catch (e) {}
+    try {
+      if (typeof window.__vpcUrlTrip === 'function') { window.__vpcUrlTrip(url); return true; }
+    } catch (e) {}
+    window.open(url, '_blank');
+    return false;
   }
 
-  web.addEventListener('load', function () { clearTimeout(watchdog); });
-  function syncNav() { document.getElementById('back').disabled = idx <= 0; }
-  document.getElementById('back').onclick = function () { if (idx > 0) { idx--; load(stack[idx], false); } };
-  document.getElementById('go').onclick = function () { var u = toUrl(addr.value); if (u) load(u); };
-  addr.addEventListener('keydown', function (e) { if (e.key === 'Enter') { var u = toUrl(addr.value); if (u) load(u); } });
-  document.getElementById('openTab').onclick = function () { window.open(notice.dataset.url || currentUrl, '_blank'); };
-  document.getElementById('goBack').onclick = function () { hideNotice(); if (idx > 0) { idx--; load(stack[idx], false); } };
+  /* ---------------- navigation core ---------------- */
+  function armWatchdog(t) {
+    clearTimeout(t.watchdog);
+    t.watchdog = setTimeout(function () {
+      if (!t.loading) return;
+      t.loading = false;
+      showDoor(t, tabUrl(t), 'failed');
+      syncChrome();
+    }, LOAD_WATCHDOG_MS);
+  }
+  function onFrameLoad(t) {
+    clearTimeout(t.watchdog);
+    t.loading = false;
+    /* a slow page that lands AFTER the watchdog showed the "didn't
+       load" door clears its own door — the page is right there.
+       (Not gated on the loading flag: the watchdog already cleared
+       it when the door went up, before the load arrived.) */
+    if (t.door && t.door.why === 'failed' && t.door.url === tabUrl(t)) clearDoor(t);
+    /* same-origin pages can tell us their real title */
+    try {
+      var d = t.f.contentDocument;
+      if (d && d.title) t.title = d.title.slice(0, 40);
+    } catch (e) {}
+    syncChrome(); save();
+  }
+  function showDoor(t, url, why) {
+    t.door = { url: url, why: why };
+    if (t === activeTab()) renderDoor();
+    save();
+  }
+  function clearDoor(t) {
+    if (t.door) { t.door = null; if (t === activeTab()) renderDoor(); save(); }
+  }
+  /* go: the one road every navigation takes. opts: {replace, fromHistory, query} */
+  function go(t, rawUrl, opts) {
+    opts = opts || {};
+    var url = rewrite(rawUrl);
+    if (!url) return false;
+    if (isWalled(url)) {
+      if (!opts.fromHistory) {
+        if (opts.replace && t.idx >= 0) t.stack[t.idx] = url;
+        else { t.stack = t.stack.slice(0, t.idx + 1); t.stack.push(url); t.idx = t.stack.length - 1; }
+      }
+      t.title = shortTitle(url);
+      showDoor(t, url, 'walled');
+      syncChrome(); save();
+      return true;
+    }
+    clearDoor(t);
+    var f = frameFor(t);
+    t.loading = true;
+    if (!opts.fromHistory) {
+      if (opts.replace && t.idx >= 0) t.stack[t.idx] = url;
+      else { t.stack = t.stack.slice(0, t.idx + 1); t.stack.push(url); t.idx = t.stack.length - 1; }
+    }
+    t.title = opts.query ? shortTitle(url, opts.query) : shortTitle(url);
+    f.src = url;
+    armWatchdog(t);
+    if (opts.query) enumerate(t, opts.query);
+    syncChrome(); save();
+    return true;
+  }
+  function navHistory(t, dir) {
+    var n = t.idx + dir;
+    if (n < 0 || n >= t.stack.length) return false;
+    t.idx = n;
+    var url = t.stack[n];
+    clearTimeout(t.watchdog);
+    if (isWalled(url)) { t.title = shortTitle(url); showDoor(t, url, 'walled'); syncChrome(); save(); return true; }
+    clearDoor(t);
+    var f = frameFor(t);
+    t.loading = true;
+    t.title = shortTitle(url, isSearchUrl(url) ? queryOfSearch(url) : '');
+    f.src = url;
+    armWatchdog(t);
+    syncChrome(); save();
+    return true;
+  }
 
-  // Other PC screens (e.g. a link layer) can send the browser places.
-  window.__vpcBrowserGo = function (raw) { var u = toUrl(raw); if (u) load(u); };
+  /* Search-result enumeration for the voice hook (open result #n).
+     Bing's RSS carries the same results as data. It is fetched
+     best-effort: where the platform's CORS posture blocks the read,
+     results stay unenumerated and __vpcBrowserState says so —
+     ALLON then speaks honestly instead of guessing a link. */
+  function enumerate(t, q) {
+    t.resultsFor = q;
+    t.results = null;
+    if (typeof fetch !== 'function') return;
+    fetch(RSS_URL + encodeURIComponent(q)).then(function (r) { return r.text(); }).then(function (xml) {
+      try {
+        var doc = new DOMParser().parseFromString(xml, 'text/xml');
+        var items = doc.querySelectorAll('item');
+        var out = [];
+        for (var i = 0; i < items.length && out.length < 10; i++) {
+          var ti = items[i].querySelector('title');
+          var li = items[i].querySelector('link');
+          if (li && li.textContent) out.push({ title: ti ? ti.textContent : li.textContent, url: li.textContent });
+        }
+        if (out.length && t.resultsFor === q) { t.results = out; save(); }
+      } catch (e) {}
+    }).catch(function () { /* CORS or network: stays unenumerated, honestly */ });
+  }
 
-  web.src = BLANK;
-  syncNav();
+  /* ---------------- rendering ---------------- */
+  function renderTabs() {
+    tabsEl.innerHTML = '';
+    S.tabs.forEach(function (t, i) {
+      var d = document.createElement('div');
+      d.className = 'tab' + (i === S.active ? ' on' : '');
+      var tt = document.createElement('span');
+      tt.className = 'tt'; tt.textContent = t.title || 'New Tab';
+      d.appendChild(tt);
+      if (S.tabs.length > 1) {
+        var x = document.createElement('button');
+        x.className = 'tx'; x.textContent = '✕'; x.title = 'Close tab';
+        x.onclick = function (e) { e.stopPropagation(); closeTab(i); };
+        d.appendChild(x);
+      }
+      d.onclick = function () { activate(i); };
+      tabsEl.appendChild(d);
+    });
+    var plus = document.createElement('button');
+    plus.id = 'newTab'; plus.textContent = '+'; plus.title = 'New tab';
+    plus.onclick = function () { openTab(''); };
+    tabsEl.appendChild(plus);
+  }
+  function renderDoor() {
+    var t = activeTab();
+    if (t && t.door) {
+      var host = hostOf(t.door.url) || t.door.url;
+      document.getElementById('doorTitle').textContent =
+        t.door.why === 'failed' ? 'THIS PAGE DIDN\u2019T LOAD ON THE SCREEN' : 'THIS SITE WON\u2019T OPEN INSIDE THE PC';
+      document.getElementById('doorWhy').textContent = t.door.why === 'failed'
+        ? 'The page didn\u2019t load on this screen — the site may not allow opening inside another app, or the connection failed. You can open it full view instead.'
+        : host + ' locks itself so it can only open full-screen — it can never show inside another app\u2019s screen. Open it full view: it fills this view, and your back button brings you straight back to this tab, right where you left it.';
+      document.getElementById('doorRetry').style.display = t.door.why === 'failed' ? 'inline-block' : 'none';
+      doorEl.style.display = 'flex';
+    } else {
+      doorEl.style.display = 'none';
+    }
+  }
+  function syncChrome() {
+    var t = activeTab();
+    renderTabs();
+    S.tabs.forEach(function (tb) { if (tb.f) tb.f.classList.toggle('on', tb === t); });
+    var u = tabUrl(t);
+    addrEl.value = t && t.door ? t.door.url : u;
+    document.getElementById('back').disabled = !t || t.idx <= 0;
+    document.getElementById('fwd').disabled = !t || t.idx >= t.stack.length - 1;
+    var busy = !!(t && t.loading);
+    veil.style.display = busy ? 'block' : 'none';
+    loadTag.style.display = busy ? 'block' : 'none';
+    startEl.style.display = (t && !u && !t.door) ? 'flex' : 'none';
+    renderDoor();
+  }
+  function note(msg, ms) {
+    noteEl.textContent = msg;
+    noteEl.style.display = 'block';
+    clearTimeout(noteTimer);
+    noteTimer = setTimeout(function () { noteEl.style.display = 'none'; }, ms || 3400);
+  }
+
+  /* ---------------- tab ops ---------------- */
+  function activate(i) {
+    if (i < 0 || i >= S.tabs.length) return;
+    S.active = i;
+    syncChrome(); save();
+  }
+  function openTab(url) {
+    if (S.tabs.length >= MAX_TABS) { note('That\u2019s the tab limit — close one first.'); return null; }
+    var t = newTab();
+    S.tabs.push(t);
+    S.active = S.tabs.length - 1;
+    frameFor(t);
+    if (url) go(t, url);
+    syncChrome(); save();
+    return t;
+  }
+  function closeTab(i) {
+    if (S.tabs.length <= 1) return;
+    var t = S.tabs[i];
+    clearTimeout(t.watchdog);
+    if (t.f) t.f.remove();
+    S.tabs.splice(i, 1);
+    if (S.active >= S.tabs.length) S.active = S.tabs.length - 1;
+    else if (i < S.active) S.active--;
+    syncChrome(); save();
+  }
+
+  /* ---------------- chrome wiring ---------------- */
+  document.getElementById('back').onclick = function () { var t = activeTab(); if (t) navHistory(t, -1); };
+  document.getElementById('fwd').onclick = function () { var t = activeTab(); if (t) navHistory(t, 1); };
+  document.getElementById('reload').onclick = function () {
+    var t = activeTab(); if (!t) return;
+    if (t.door) { go(t, t.door.url, { replace: true }); return; }
+    var u = tabUrl(t);
+    if (u) { t.loading = true; frameFor(t).src = u; armWatchdog(t); syncChrome(); }
+  };
+  function omnibox() {
+    var t = activeTab(); if (!t) return;
+    var raw = addrEl.value;
+    var u = toUrl(raw);
+    if (!u) return;
+    var isSearch = u.indexOf(SEARCH_URL) === 0;
+    go(t, u, { query: isSearch ? raw.trim() : '' });
+  }
+  document.getElementById('go').onclick = omnibox;
+  addrEl.addEventListener('keydown', function (e) { if (e.key === 'Enter') omnibox(); });
+  document.getElementById('doorFull').onclick = function () {
+    var t = activeTab(); if (!t || !t.door) return;
+    save();
+    callTrip(t.door.url);
+  };
+  document.getElementById('doorRetry').onclick = function () {
+    var t = activeTab(); if (!t || !t.door) return;
+    var u = t.door.url; clearDoor(t); go(t, u, { replace: true });
+  };
+  document.getElementById('doorBack').onclick = function () {
+    var t = activeTab(); if (!t) return;
+    clearDoor(t);
+    if (t.idx > 0) navHistory(t, -1); else syncChrome();
+  };
+  startEl.querySelectorAll('.tile').forEach(function (b) {
+    b.onclick = function () { var t = activeTab(); if (t) go(t, b.getAttribute('data-go')); };
+  });
+
+  /* ---------------- ALLON hooks (page-window style, like
+     __vpcYouTubeGo / __vpcShortzState on the other surfaces) ------- */
+  function hook(what, fn) {
+    return function (arg) {
+      hookDetail = '';
+      try {
+        var r = fn(arg);
+        lastHook = { ok: r !== false, what: what, detail: hookDetail || String(arg == null ? '' : arg).slice(0, 80) };
+        return r;
+      } catch (e) {
+        lastHook = { ok: false, what: what, detail: 'error: ' + (e && e.message || e) };
+        return false;
+      }
+    };
+  }
+  window.__vpcBrowserGo = hook('go', function (raw) {
+    var t = activeTab(); if (!t) return false;
+    var u = toUrl(raw); if (!u) return false;
+    return go(t, u, { query: u.indexOf(SEARCH_URL) === 0 ? String(raw).trim() : '' });
+  });
+  window.__vpcBrowserOpen = hook('open', function (raw) {
+    var t = activeTab(); if (!t) return false;
+    var u = toAddress(raw); if (!u) return false;
+    return go(t, u);
+  });
+  window.__vpcBrowserSearch = hook('search', function (q) {
+    var t = activeTab(); if (!t) return false;
+    q = String(q || '').trim(); if (!q) return false;
+    return go(t, SEARCH_URL + encodeURIComponent(q), { query: q });
+  });
+  window.__vpcBrowserResult = hook('result', function (n) {
+    var t = activeTab(); if (!t) return false;
+    n = parseInt(n, 10);
+    if (!n || n < 1) return false;
+    if (!t.results || !t.results.length) {
+      hookDetail = 'results-not-enumerable';
+      note('The results are on the screen — tap the one you want.');
+      return false;
+    }
+    var r = t.results[n - 1];
+    if (!r) { note('There\u2019s no result number ' + n + ' in this search.'); return false; }
+    return go(t, r.url); /* wall check inside go(): a walled result lands on the door */
+  });
+  window.__vpcBrowserBack = hook('back', function () { var t = activeTab(); return t ? navHistory(t, -1) : false; });
+  window.__vpcBrowserForward = hook('forward', function () { var t = activeTab(); return t ? navHistory(t, 1) : false; });
+  window.__vpcBrowserReload = hook('reload', function () { document.getElementById('reload').click(); return true; });
+  window.__vpcBrowserNewTab = hook('newtab', function (url) { var t = openTab(url ? toUrl(url) : ''); return !!t; });
+  window.__vpcBrowserTab = hook('tab', function (i) { activate(parseInt(i, 10) || 0); return true; });
+  window.__vpcBrowserState = function () {
+    return {
+      kind: 'browser2',
+      active: S.active,
+      tabs: S.tabs.map(function (t) {
+        return { url: tabUrl(t), title: t.title, idx: t.idx, history: t.stack.length,
+                 door: t.door ? t.door.url : '', loading: !!t.loading };
+      }),
+      resultsEnumerable: !!(activeTab() && activeTab().results && activeTab().results.length),
+      resultsFor: activeTab() ? activeTab().resultsFor : '',
+      lastHook: lastHook
+    };
+  };
+
+  /* mailbox in the muse style: the engine may also drop a JSON
+     command on window.top.__vpcBrowserCmd; the ack lands on
+     window.top.__vpcBrowserAck. */
+  setInterval(function () {
+    var raw = '';
+    try { raw = window.top.__vpcBrowserCmd || ''; } catch (e) { raw = ''; }
+    if (!raw) return;
+    try { window.top.__vpcBrowserCmd = ''; } catch (e) {}
+    var c = null;
+    try { c = JSON.parse(raw); } catch (e) { c = null; }
+    if (!c || !c.cmd) return;
+    var map = { go: window.__vpcBrowserGo, open: window.__vpcBrowserOpen, search: window.__vpcBrowserSearch,
+                result: window.__vpcBrowserResult, back: window.__vpcBrowserBack, forward: window.__vpcBrowserForward,
+                reload: window.__vpcBrowserReload, newtab: window.__vpcBrowserNewTab, tab: window.__vpcBrowserTab };
+    var fn = map[c.cmd];
+    var ok = fn ? fn(c.arg) : false;
+    try { window.top.__vpcBrowserAck = JSON.stringify({ cmd: c.cmd, ok: ok !== false, t: Date.now() }); } catch (e) {}
+  }, 400);
+
+  window.addEventListener('pagehide', save);
+
+  /* ---------------- boot ---------------- */
+  if (!restore()) {
+    var t0 = newTab();
+    S.tabs.push(t0);
+    S.active = 0;
+    frameFor(t0);
+  }
+  syncChrome();
+})();
 </script>
 </body>
 </html>
