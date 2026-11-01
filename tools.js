@@ -531,11 +531,24 @@
   ].join('');
   document.head.appendChild(css);
   var openFor = '';
-  function close() {
+  var shownData = null;
+  /* D23: the sheet lifecycle has ONE owner. close() is the only path
+     that may null the payload, and render() must never do it: the old
+     render() opened with close(), nulling window.__vpcSwitcher, and
+     the watcher's next tick read "no payload + sheet open" as an
+     external dismissal and closed the sheet it had just rendered
+     (~250-500 ms self-close strobe on every tap). render() therefore
+     tears down DOM-only via close(false) and records the payload it
+     is displaying; the watcher renders only a payload it has not
+     shown and closes only when the payload is genuinely gone. */
+  function close(clearPayload) {
     var p = document.getElementById('vpc-switch');
     if (p) p.remove();
     openFor = '';
-    try { window.__vpcSwitcher = null; } catch (e) {}
+    shownData = null;
+    if (clearPayload !== false) {
+      try { window.__vpcSwitcher = null; } catch (e) {}
+    }
   }
   function pick(payload) {
     try { window.__vpcSwitchTo = JSON.stringify(payload); } catch (e) {}
@@ -581,7 +594,8 @@
     else draw(WEB_APPS);
   }
   function render(data) {
-    close();
+    close(false);
+    shownData = data;
     openFor = data.screen;
     var p = document.createElement('div');
     p.id = 'vpc-switch';
@@ -605,7 +619,7 @@
   setInterval(function () {
     var d = null;
     try { d = window.__vpcSwitcher; } catch (e) { d = null; }
-    if (d && d.screen && d.screen !== openFor) render(d);
+    if (d && (d !== shownData || d.screen !== openFor)) render(d);
     if (!d && openFor) close();
   }, 250);
   document.addEventListener('pointerdown', function (e) {
@@ -652,9 +666,10 @@
     browser: 'browser.html',
     youtube: 'youtube.html',
     muse: 'muse.html',
-    gaming: 'gaming.html'
+    gaming: 'gaming.html',
+    babyboo: 'babyboo.html'
   };
-  var NAMES = { hq: 'YOUR OFFICE', shortz: 'SHORTZ', browser: 'THE BROWSER', youtube: 'YOUTUBE', muse: 'MUSE', gaming: 'CLOUD GAMING' };
+  var NAMES = { hq: 'YOUR OFFICE', shortz: 'SHORTZ', browser: 'THE BROWSER', youtube: 'YOUTUBE', muse: 'MUSE', gaming: 'CLOUD GAMING', babyboo: 'BABYBOO' };
   var reg = {};      /* key -> {entry, f, src, readable, escaped} */
   var authKey = '';
   var authEscaped = false;
