@@ -95,24 +95,26 @@ this screen skips to the next one on its own.</div>
     return (location.origin && location.origin.indexOf('http') === 0)
       ? '&origin=' + encodeURIComponent(location.origin) : '';
   }
-  function embedUrl(id, autoplay){
+  function embedUrl(id, autoplay, start){
     return 'https://www.youtube-nocookie.com/embed/' + id +
-           '?autoplay=' + (autoplay ? 1 : 0) + '&rel=0&playsinline=1&enablejsapi=1' + originParam();
+           '?autoplay=' + (autoplay ? 1 : 0) + '&rel=0&playsinline=1&enablejsapi=1' +
+           (start ? '&start=' + Math.floor(start) : '') + originParam();
   }
 
   var queue = [], qIdx = 0, mode = 'queue'; /* 'queue' | 'search' | 'single' */
-  var curId = null, skips = 0, searchErrs = 0;
+  var curId = null, skips = 0, searchErrs = 0, lastTerm = '';
   var ytApi = 'idle', ytPlayer = null, stallTimer = null;
   var tapPlay = document.getElementById('tapPlay'), note = document.getElementById('note');
   var NOTE_HOME = note.textContent;
 
-  function loadCurrent(autoplay){
+  function loadCurrent(autoplay, startSec){
     curId = queue[qIdx] || null;
     if (!curId) return;
-    player.src = embedUrl(curId, autoplay);
+    player.src = embedUrl(curId, autoplay, startSec || 0);
     showPlayer();
     if (autoplay) armStallWatch(); else hideTapPlay();
     rebind();
+    saveYt(0);
   }
   function playQueue(ids, autoplay){
     queue = ids.slice(); qIdx = 0; mode = 'queue'; skips = 0;
@@ -126,7 +128,8 @@ this screen skips to the next one on its own.</div>
     loadCurrent(true);
   }
   function search(term){
-    mode = 'search'; searchErrs = 0; curId = null;
+    mode = 'search'; searchErrs = 0; curId = null; lastTerm = term;
+    saveYt(0);
     player.src = 'https://www.youtube-nocookie.com/embed?listType=search&list=' +
                  encodeURIComponent(term) + '&autoplay=1&rel=0&playsinline=1&enablejsapi=1' + originParam();
     showPlayer();
@@ -261,9 +264,44 @@ this screen skips to the next one on its own.</div>
     if (e.data && e.data.vpc === 'stage') document.body.classList.toggle('stage', !!e.data.on);
   });
 
-  /* first open: a proven-playable pick, cued and ready — never the
-     empty idle, never a search gamble */
-  playQueue(LANES[DEFAULT_LANE], false);
+  /* ── Room persistence (his law; defect filed 2026-11-01): this
+     surface keeps its own playback state — the queue, which video,
+     the position — so a restart returns the video he left, where
+     he left it. A search restores as the same search (a search
+     playlist has no position to return to). ─────────────────── */
+  var YT_KEY = 'vpc_youtube_play';
+  function saveYt(freshT){
+    try {
+      var st = null, t = (typeof freshT === 'number') ? freshT : 0;
+      if (ytPlayer && ytPlayer.getPlayerState){
+        try { st = ytPlayer.getPlayerState(); if (typeof freshT !== 'number') t = ytPlayer.getCurrentTime() || 0; } catch (e) {}
+      }
+      localStorage.setItem(YT_KEY, JSON.stringify({
+        v: 1, mode: mode, queue: queue, qIdx: qIdx, term: lastTerm,
+        t: t, paused: (st === 2)
+      }));
+    } catch (e) {}
+  }
+  function restoreYt(){
+    var sv = null;
+    try { sv = JSON.parse(localStorage.getItem(YT_KEY) || 'null'); } catch (e) {}
+    if (!sv) return false;
+    if (sv.mode === 'search' && sv.term){ search(sv.term); return true; }
+    if (sv.queue && sv.queue.length){
+      queue = sv.queue.slice();
+      qIdx = Math.min(Math.max(sv.qIdx || 0, 0), queue.length - 1);
+      mode = (sv.mode === 'single') ? 'single' : 'queue';
+      skips = 0;
+      loadCurrent(!sv.paused, sv.t || 0);
+      return true;
+    }
+    return false;
+  }
+  setInterval(function(){ if (curId || mode === 'search') saveYt(); }, 2000);
+
+  /* first open: what he left, if anything — otherwise a
+     proven-playable pick, cued and ready */
+  if (!restoreYt()) playQueue(LANES[DEFAULT_LANE], false);
 })();
 </script>
 </body>

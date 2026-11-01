@@ -350,7 +350,7 @@
      one. The LAST part ends clean: state off, a Finished line, the
      browse untouched — no dead black box, no phantom advance for
      movies and single videos. */
-  var ctx = null, lastYtError = null, lastAdvanceAt = 0;
+  var ctx = null, lastYtError = null, lastAdvanceAt = 0, lastPlayUrl = null;
   function ctxFor(rec, idx, url){
     var parts = (rec && rec[5] && rec[5].length > 1) ? rec[5] : null;
     var i = (typeof idx === 'number') ? idx : -1;
@@ -373,6 +373,7 @@
   function endState(){
     wantPlay = false;
     if (ctx && ctx.rec) now.textContent = '\u25a0 Finished: ' + ctx.rec[0];
+    try { localStorage.removeItem(PLAY_KEY); } catch (e) {}
   }
   function advance(reason, forced){
     if (!ctx || !ctx.parts){ endState(); return; }
@@ -402,6 +403,7 @@
     wantPlay = true; lastTouchAt = Date.now();
     player = document.getElementById('player');
     curYtId = ytIdOf(url);
+    lastPlayUrl = url;
     var viaApi = false;
     if (curYtId && ytPlayer && ytPlayer.loadVideoById){
       try { ytPlayer.loadVideoById(curYtId); viaApi = true; } catch (e) { viaApi = false; }
@@ -417,8 +419,63 @@
     now.textContent = ctx ? nowLabel() : ('\u25b6 Now playing: ' + title);
     closeCard();
     window.scrollTo(0, 0);
+    savePlay(0);
   }
 
+  /* ── Room persistence (his law; defect filed 2026-11-01): this
+     surface keeps its own playback state — the title in the player,
+     which part, the position, playing or paused — so a restart
+     returns the video he left, where he left it. The engine saves
+     the room; the surfaces save themselves. ──────────────────── */
+  var PLAY_KEY = 'vpc_shortz_play';
+  function savePlay(freshT){
+    try {
+      if (!ctx || !ctx.rec || !lastPlayUrl){ localStorage.removeItem(PLAY_KEY); return; }
+      var st = null, t = (typeof freshT === 'number') ? freshT : 0;
+      if (typeof freshT !== 'number' && ytPlayer && ytPlayer.getPlayerState){
+        try { st = ytPlayer.getPlayerState(); t = ytPlayer.getCurrentTime() || 0; } catch (e) {}
+      } else if (ytPlayer && ytPlayer.getPlayerState){
+        try { st = ytPlayer.getPlayerState(); } catch (e) {}
+      }
+      localStorage.setItem(PLAY_KEY, JSON.stringify({
+        v: 1, title: ctx.rec[0], url: lastPlayUrl,
+        idx: ctx.idx, t: t, want: wantPlay, paused: (st === 2)
+      }));
+    } catch (e) {}
+  }
+  function restorePlay(){
+    var sv = null;
+    try { sv = JSON.parse(localStorage.getItem(PLAY_KEY) || 'null'); } catch (e) {}
+    if (!sv || !sv.title || !sv.url) return;
+    var rec = null;
+    for (var i = 0; i < FEED.length; i++){ if (FEED[i][0] === sv.title){ rec = FEED[i]; break; } }
+    if (!rec) return;
+    ctx = ctxFor(rec, (typeof sv.idx === 'number') ? sv.idx : -1, sv.url);
+    lastPlayUrl = sv.url;
+    curYtId = ytIdOf(sv.url);
+    wantPlay = !!sv.want && !sv.paused;
+    lastTouchAt = Date.now();
+    var start = Math.max(0, Math.floor(sv.t || 0));
+    var extra = 'autoplay=' + (wantPlay ? 1 : 0) + '&rel=0' + (start ? '&start=' + start : '')
+              + (curYtId ? '&enablejsapi=1&playsinline=1' : '');
+    player.src = sv.url + (sv.url.indexOf('?') >= 0 ? '&' : '?') + extra;
+    if (curYtId) ensureYtApi();
+    player.style.display = 'block'; idle.style.display = 'none';
+    document.getElementById('fsBtn').style.display = 'block';
+    now.textContent = nowLabel();
+    if (!wantPlay && curYtId){
+      /* cued, not playing: once the API binds, hold the position paused */
+      var holdT = setInterval(function(){
+        if (ytPlayer && ytPlayer.pauseVideo){
+          try { ytPlayer.seekTo(start, true); ytPlayer.pauseVideo(); } catch (e) {}
+          clearInterval(holdT);
+        }
+      }, 600);
+      setTimeout(function(){ clearInterval(holdT); }, 8000);
+    }
+  }
+  restorePlay();
+  setInterval(function(){ if (ctx && wantPlay) savePlay(); }, 2000);
 
 })();
 </script>
