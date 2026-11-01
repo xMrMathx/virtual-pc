@@ -613,3 +613,223 @@
     if (p && openFor && !p.contains(e.target)) close();
   }, true);
 })();
+
+/* ---- Defect 14: tracked-app preservation + sign-in presentation ----
+   (A) PRESERVATION LAW: a tracked iframe, once created and loaded, is
+   NEVER destroyed, recreated or src-reset by a room operation. Swaps,
+   splits, switcher picks, underlay refreshes, deploy/stow, zoom and
+   pan only MOVE and re-clip the existing element (TrackSet). The audit
+   behind this block found the src attribute is assigned exactly once,
+   at creation (__vpcTrackMake), and no code path replaces a tracked
+   element — this guard snapshots every tracked iframe (element +
+   entry + src) and heals + logs any violation, so the law is enforced,
+   not just intended.
+   (B) SIGN-IN: Google's sign-in page sends X-Frame-Options: DENY
+   (measured with curl, 2026-11-01), so it can NEVER render inside a
+   screen, and Google OAuth from a WebView UA ("; wv") is refused with
+   its branded 403 (the APK sets no UA override — the 1.2 APK fix is
+   specced in the Defect 14 report). The office's signInWithRedirect
+   therefore destroys the in-glass office document and strands the
+   user on a 403. SURVIVING ROUTE (the FULL APP pill/mode was removed
+   by Defect 20 — this fix does not use it): a shell-handled SIGN-IN
+   TRIP. When a tracked app tries to start sign-in, the guard leaves
+   the in-glass document untouched and offers one deliberate tap that
+   navigates THIS view, top-level, to the app's own standalone URL —
+   the app becomes the whole view inside the same app/browser, runs
+   its own redirect sign-in there, and the back button returns here,
+   where the in-glass copy boots signed-in from the shared Firebase
+   persistence. If an app ever escapes off-origin anyway, the shell
+   says so and offers the same trip + a one-tap restore of the SAME
+   iframe element. */
+(function () {
+  'use strict';
+  if (window.__vpcGuard14) return;
+  window.__vpcGuard14 = true;
+
+  var HOME = {
+    hq: 'https://xmrmathx.github.io/agent-office/',
+    shortz: 'https://xmrmathx.github.io/shortz-tv/',
+    browser: 'browser.html',
+    youtube: 'youtube.html',
+    muse: 'muse.html'
+  };
+  var NAMES = { hq: 'YOUR OFFICE', shortz: 'SHORTZ', browser: 'THE BROWSER', youtube: 'YOUTUBE', muse: 'MUSE' };
+  var reg = {};      /* key -> {entry, f, src, readable, escaped} */
+  var authKey = '';
+  var authEscaped = false;
+
+  var css = document.createElement('style');
+  css.textContent = [
+    '#vpc-auth{position:fixed;left:0;right:0;bottom:0;z-index:9995;',
+    'background:rgba(8,8,16,.97);border-top:2px solid #ffb800;box-shadow:0 -14px 44px rgba(0,0,0,.65);',
+    'color:#f2f2f7;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:14px 16px 18px}',
+    '#vpc-auth h3{margin:2px 0 6px;font-size:13px;letter-spacing:2px;color:#ffd479;font-weight:800}',
+    '#vpc-auth p{margin:0 0 12px;font-size:14px;line-height:1.45;color:#d8d8e4}',
+    '#vpc-auth .row{display:flex;gap:10px;flex-wrap:wrap}',
+    '.vpc-auth-btn{flex:1;min-width:140px;padding:13px;border-radius:11px;border:1.5px solid #2c2c3e;',
+    'background:#14141f;color:#f2f2f7;cursor:pointer;font-size:15px;font-weight:700}',
+    '.vpc-auth-btn.main{border-color:#ffb800;color:#ffd479}',
+    '.vpc-auth-btn:active{border-color:#00f0ff}'
+  ].join('');
+  document.head.appendChild(css);
+
+  /* The sign-in trip: this view goes top-level to the app's own
+     standalone URL. Inside the APK that stays inside the same WebView
+     (https loads in-view); in a browser it is a same-tab navigation.
+     Either way the back button returns to the PC, and a marker lets
+     the returning PC know a trip happened. */
+  function authTrip(key) {
+    if (!HOME[key]) return false;
+    try { localStorage.setItem('vpc_auth_return', JSON.stringify({ key: key, t: Date.now() })); } catch (e) {}
+    console.log('VPC AUTH: sign-in trip — ' + key + ' becomes the whole view (top-level, same view)');
+    window.location.href = HOME[key];
+    return true;
+  }
+
+  function hideAuth() {
+    var p = document.getElementById('vpc-auth');
+    if (p) p.remove();
+    authKey = '';
+    authEscaped = false;
+  }
+
+  function showAuth(key, escaped) {
+    authKey = key;
+    authEscaped = !!escaped;
+    var p = document.getElementById('vpc-auth');
+    if (!p) {
+      p = document.createElement('div');
+      p.id = 'vpc-auth';
+      document.documentElement.appendChild(p);
+    }
+    p.innerHTML = '';
+    var h = document.createElement('h3');
+    h.textContent = 'SIGN-IN NEEDS THE WHOLE VIEW';
+    p.appendChild(h);
+    var t = document.createElement('p');
+    t.textContent = escaped
+      ? (NAMES[key] || 'THIS APP') + ' tried to sign in and Google refused it inside the screen — Google never allows sign-in inside another app. Take the sign-in trip below, or put the app back on this screen.'
+      : 'Google never allows sign-in inside another app\u2019s screen, so ' + (NAMES[key] || 'this app') + ' stays right here, untouched. Take the sign-in trip: it becomes the whole view, you sign in there, and your back button brings you straight back to this PC — signed in.';
+    p.appendChild(t);
+    var row = document.createElement('div');
+    row.className = 'row';
+    p.appendChild(row);
+    var b1 = document.createElement('button');
+    b1.className = 'vpc-auth-btn main';
+    b1.textContent = 'TAKE ME TO SIGN IN \u2192';
+    b1.onclick = function () { authTrip(key); };
+    row.appendChild(b1);
+    if (escaped) {
+      var b2 = document.createElement('button');
+      b2.className = 'vpc-auth-btn';
+      b2.textContent = 'PUT IT BACK ON THIS SCREEN';
+      b2.onclick = function () { restoreFrame(key); hideAuth(); };
+      row.appendChild(b2);
+    }
+    var b3 = document.createElement('button');
+    b3.className = 'vpc-auth-btn';
+    b3.textContent = 'NOT NOW';
+    b3.onclick = function () { hideAuth(); };
+    row.appendChild(b3);
+  }
+
+  /* The app itself navigated its iframe away (the escape). Putting the
+     SAME element back on its home URL is a user-commanded recovery,
+     not a room operation. */
+  function restoreFrame(key) {
+    var r = reg[key];
+    if (!r || !r.f) return;
+    try { r.f.setAttribute('src', r.src); } catch (e) {}
+    r.escaped = false;
+    r.readable = false;
+    console.log('VPC AUTH: ' + key + ' restored to its screen (same iframe element)');
+  }
+
+  window.__vpcAuthPresent = function (key) {
+    showAuth(key, false);
+  };
+  window.__vpcAuthState = function () {
+    return { key: authKey, escaped: authEscaped, open: !!document.getElementById('vpc-auth') };
+  };
+
+  /* Same-origin apps: wrap their sign-in entry point so the in-glass
+     document NEVER navigates to an auth host. The office exposes a
+     global googleSignIn() (Firebase signInWithRedirect) — that call is
+     what destroyed the office document and produced the 403. */
+  function hookApp(key, T) {
+    try {
+      var w = T.f.contentWindow;
+      if (!w || !w.document) return;
+      if (key === 'hq' && typeof w.googleSignIn === 'function' && !w.__vpcSigninHooked) {
+        w.__vpcSigninHooked = true;
+        w.googleSignIn = function () {
+          try { window.__vpcAuthPresent('hq'); } catch (e) {}
+        };
+        console.log('VPC AUTH: office sign-in routed to the sign-in trip — in-glass document preserved');
+      }
+    } catch (e) { /* cross-origin right now: the escape watch covers it */ }
+  }
+
+  function register(key, T) {
+    if (!T || !T.f || reg[key]) return;
+    reg[key] = { entry: T, f: T.f, src: T.f.getAttribute('src') || '', readable: false, escaped: false };
+    console.log('VPC GUARD: registered ' + key + ' — iframe element + src frozen from creation');
+  }
+
+  function verify(key) {
+    var r = reg[key];
+    if (!r) return;
+    var T = window.__vpcTrack && window.__vpcTrack[key];
+    if (!T || T !== r.entry || T.f !== r.f) {
+      window.__vpcTrack[key] = r.entry;
+      if (r.entry.clip && !r.entry.clip.isConnected) document.body.appendChild(r.entry.clip);
+      console.log('VPC GUARD: tracked entry for ' + key + ' was replaced — original iframe restored');
+      T = r.entry;
+    }
+    if (!r.f.isConnected && r.entry.clip && r.entry.clip.isConnected) {
+      r.entry.clip.appendChild(r.entry.wrap);
+      console.log('VPC GUARD: re-seated ' + key + ' wrap in its clip');
+    }
+    var nowSrc = '';
+    try { nowSrc = r.f.getAttribute('src') || ''; } catch (e) {}
+    if (nowSrc !== r.src) {
+      try { r.f.setAttribute('src', r.src); } catch (e) {}
+      console.log('VPC GUARD: src reset blocked for ' + key + ' (creation src restored)');
+    }
+  }
+
+  function watch(key, T) {
+    var r = reg[key];
+    if (!r || !T || !T.f) return;
+    var href = null;
+    try { href = T.f.contentWindow.location.href; } catch (e) { href = null; }
+    if (href !== null) {
+      r.readable = true;
+      if (r.escaped) r.escaped = false;
+      hookApp(key, T);
+    } else if (r.readable && !r.escaped) {
+      /* Was readable on our origins, now answers to a foreign origin:
+         the app navigated its own frame away (auth escape). */
+      r.escaped = true;
+      console.log('VPC AUTH: ' + key + ' left its screen (off-origin navigation) — offering the sign-in trip');
+      showAuth(key, true);
+    }
+  }
+
+  try {
+    var ret = localStorage.getItem('vpc_auth_return');
+    if (ret) {
+      localStorage.removeItem('vpc_auth_return');
+      console.log('VPC AUTH: back from a sign-in trip (' + ret + ') — apps pick the session up from their own persistence');
+    }
+  } catch (e) {}
+
+  setInterval(function () {
+    var T = window.__vpcTrack || {};
+    Object.keys(T).forEach(function (k) { register(k, T[k]); });
+    Object.keys(reg).forEach(function (k) {
+      var Tk = window.__vpcTrack && window.__vpcTrack[k];
+      if (Tk) { verify(k); watch(k, Tk); }
+    });
+  }, 400);
+})();
