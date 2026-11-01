@@ -598,18 +598,6 @@
         if (!here) pick({ screen: data.screen, content: c.content });
       });
     });
-    /* The actual Muse app: muse.ai frames nothing outside itself
-       (X-Frame-Options: SAMEORIGIN, CSP frame-ancestors 'self' —
-       measured 2026-11-01, proofs/v5.2/museapp_headers.txt), so it can
-       never be tracked in-glass. What lands on the screen instead is
-       its panel (muse-app.html, served through the browser surface
-       like every web pick); the panel's OPEN MUSE button takes the
-       banner trip (see the D14 guard's __vpcAppTrip). */
-    var gA = document.createElement('div');
-    gA.className = 'grp'; gA.textContent = 'THE ACTUAL APP'; p.appendChild(gA);
-    row(p, 'Muse \u2014 actual app', 'opens full view', function () {
-      pick({ screen: data.screen, webUrl: 'https://xmrmathx.github.io/virtual-pc/muse-app.html' });
-    });
     renderApps(p, data.screen);
     var k = row(p, "Keep what's here", '', function () { close(); });
     k.classList.add('keep');
@@ -663,10 +651,9 @@
     shortz: 'https://xmrmathx.github.io/shortz-tv/',
     browser: 'browser.html',
     youtube: 'youtube.html',
-    muse: 'muse.html',
-    museapp: 'https://muse.ai/'
+    muse: 'muse.html'
   };
-  var NAMES = { hq: 'YOUR OFFICE', shortz: 'SHORTZ', browser: 'THE BROWSER', youtube: 'YOUTUBE', muse: 'MUSE', museapp: 'MUSE' };
+  var NAMES = { hq: 'YOUR OFFICE', shortz: 'SHORTZ', browser: 'THE BROWSER', youtube: 'YOUTUBE', muse: 'MUSE' };
   var reg = {};      /* key -> {entry, f, src, readable, escaped} */
   var authKey = '';
   var authEscaped = false;
@@ -760,17 +747,6 @@
 
   window.__vpcAuthPresent = function (key) {
     showAuth(key, false);
-  };
-  /* The actual-app trip — the same mechanism as the sign-in trip:
-     one deliberate tap, this view goes top-level to the app's own
-     URL, the back button returns to the room untouched. The Muse
-     panel (muse-app.html) calls this with 'museapp': muse.ai sends
-     X-Frame-Options: SAMEORIGIN + CSP frame-ancestors 'self'
-     (measured 2026-11-01, proofs/v5.2/museapp_headers.txt), so the
-     real Muse can never render inside a screen — the panel in the
-     glass plus this trip is the legal form of "Muse on the PC". */
-  window.__vpcAppTrip = function (key) {
-    return authTrip(key);
   };
   window.__vpcAuthState = function () {
     return { key: authKey, escaped: authEscaped, open: !!document.getElementById('vpc-auth') };
