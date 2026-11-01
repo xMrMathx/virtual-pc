@@ -1,7 +1,7 @@
 {
  "schema": 1,
- "generated_at": "2026-10-31T16:53:58.998307+00:00",
- "generated_ts": 1793465638,
+ "generated_at": "2026-11-01T02:11:38.197425+00:00",
+ "generated_ts": 1793499098,
  "stale_after_sec": 300,
  "sources": {
   "catalog": {
@@ -31,8 +31,8 @@
   "abr_version": {
    "path": "/home/hatch/workspace/auto-battle-royal-pages/version.txt",
    "ok": true,
-   "mtime": "2026-10-31T14:31:04.106073+00:00",
-   "bytes": 13
+   "mtime": "2026-10-31T17:49:07.850979+00:00",
+   "bytes": 14
   },
   "highlight_hub_gradle": {
    "path": "/home/hatch/workspace/highlight-hub-app/app/build.gradle.kts",
@@ -218,7 +218,7 @@
   },
   {
    "crew": "MILO",
-   "text": "Auto Battle Royal — published build v9.20261030.1",
+   "text": "Auto Battle Royal — published build v10.20261031.1",
    "tag": "PROJECT",
    "status": "working",
    "source": "abr"
@@ -249,9 +249,9 @@
   {
    "id": "abr",
    "name": "Auto Battle Royal",
-   "status": "published build v9.20261030.1",
-   "version": "v9.20261030.1",
-   "updated": "2026-10-31T14:31:04.106073+00:00",
+   "status": "published build v10.20261031.1",
+   "version": "v10.20261031.1",
+   "updated": "2026-10-31T17:49:07.850979+00:00",
    "source": "/home/hatch/workspace/auto-battle-royal-pages/version.txt"
   },
   {
@@ -343,7 +343,7 @@
   }
  ],
  "tasks_a": [
-  "Auto Battle Royal — published build v9.20261030.1",
+  "Auto Battle Royal — published build v10.20261031.1",
   "Highlight Hub — APK v1.0.3 (code 4)",
   "JOUST — The Gate (Playable Prototype)",
   "The Championships — server package v0.1.0"

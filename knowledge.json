@@ -1,6 +1,6 @@
 {
  "schema": 1,
- "generated_at": "2026-10-31T16:53:58.998307+00:00",
+ "generated_at": "2026-11-01T02:11:38.197425+00:00",
  "projects": [
   {
    "id": "shortz",
@@ -16,9 +16,9 @@
    "id": "abr",
    "name": "Auto Battle Royal",
    "what": "Goal ID: goal_d257341b269b Goal slug: auto-battle-royal",
-   "status": "published build v9.20261030.1",
-   "version": "v9.20261030.1",
-   "latest_activity": "2026-10-31T14:31:04.106073+00:00",
+   "status": "published build v10.20261031.1",
+   "version": "v10.20261031.1",
+   "latest_activity": "2026-10-31T17:49:07.850979+00:00",
    "goal": "Auto Battle Royal",
    "source": "/home/hatch/workspace/auto-battle-royal-pages/version.txt"
   },
@@ -153,7 +153,7 @@
    {
     "kind": "project",
     "name": "Auto Battle Royal",
-    "updated": "2026-10-31T14:31:04.106073+00:00"
+    "updated": "2026-10-31T17:49:07.850979+00:00"
    }
   ],
   "log_topics": [

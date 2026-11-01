@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meta Muse — Screen 8</title>
+<style>
+  :root{--bg:#0a0a12;--panel:#14141f;--line:#26263a;--ink:#f2f2f7;--mut:#9a9aad;--gold:#ffb800;--cyan:#00f0ff}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:radial-gradient(130% 110% at 50% 0%, #141428 0%, var(--bg) 70%);color:var(--ink);
+       font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;flex-direction:column;overflow:hidden}
+  #stage{flex:1 1 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5%;padding:6%}
+  #orb{position:relative;width:34vmin;height:34vmin;max-width:300px;max-height:300px}
+  #orb .core{position:absolute;inset:16%;border-radius:50%;
+       background:radial-gradient(circle at 38% 32%, #ffe9a8 0%, var(--gold) 34%, #b97e00 68%, #5e3f00 100%);
+       box-shadow:0 0 44px rgba(255,184,0,.45), inset 0 -10px 26px rgba(0,0,0,.45)}
+  #orb .ring{position:absolute;inset:0;border-radius:50%;border:2.5px solid rgba(0,240,255,.55);
+       animation:spin 14s linear infinite;border-top-color:transparent;border-bottom-color:transparent}
+  #orb .ring2{position:absolute;inset:7%;border-radius:50%;border:2px solid rgba(255,184,0,.5);
+       animation:spin 22s linear infinite reverse;border-left-color:transparent;border-right-color:transparent}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  #name{font-size:6.4vmin;font-weight:900;letter-spacing:3px;text-align:center}
+  #name b{color:var(--gold)}
+  #sub{color:var(--mut);font-size:3.4vmin;text-align:center;line-height:1.5;max-width:88%}
+  #reply{display:none;width:92%;background:var(--panel);border:1.5px solid rgba(0,240,255,.4);border-radius:13px;
+         padding:12px 15px;font-size:3.8vmin;line-height:1.45;color:#dff4ff}
+  #reply.show{display:block}
+  #bar{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--line);flex:0 0 auto}
+  #cmd{flex:1;height:50px;border-radius:12px;border:1.5px solid var(--line);background:var(--panel);
+       color:var(--ink);font-size:16px;padding:0 14px;outline:none;min-width:40px}
+  #cmd:focus{border-color:var(--gold)}
+  #send{height:50px;padding:0 20px;border-radius:12px;border:0;background:var(--gold);color:#191002;
+        font-weight:900;font-size:15px;cursor:pointer;flex:0 0 auto}
+  #chips{display:flex;gap:8px;padding:0 12px 12px;flex:0 0 auto;flex-wrap:wrap}
+  .chip{height:36px;padding:0 13px;border-radius:999px;border:1.5px solid var(--line);background:var(--panel);
+        color:var(--ink);font-size:13.5px;font-weight:600;cursor:pointer}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="orb"><div class="ring"></div><div class="ring2"></div><div class="core"></div></div>
+  <div id="name">META <b>MUSE</b></div>
+  <div id="sub">Your assistant, on Screen 8.<br>Ask me anything — or give the PC an order and I'll run it.</div>
+  <div id="reply"></div>
+</div>
+<div id="chips">
+  <button class="chip" data-cmd="how many titles do we have">How many titles?</button>
+  <button class="chip" data-cmd="who is on shift">Who's on shift?</button>
+  <button class="chip" data-cmd="turn off screen eight">Sleep this screen</button>
+</div>
+<div id="bar">
+  <input id="cmd" type="text" placeholder="Talk to Muse…" autocomplete="off">
+  <button id="send">SEND</button>
+</div>
+
+<script>
+(function(){
+  var cmd = document.getElementById('cmd'), reply = document.getElementById('reply');
+  var lastReply = '';
+  function send(text){
+    text = (text || '').trim();
+    if (!text) return;
+    try { window.top.__vpcMuseCmd = text; } catch (e) {}
+    reply.textContent = '…';
+    reply.classList.add('show');
+    cmd.value = '';
+  }
+  document.getElementById('send').onclick = function(){ send(cmd.value); };
+  cmd.addEventListener('keydown', function(e){ if (e.key === 'Enter') send(cmd.value); });
+  document.querySelectorAll('.chip').forEach(function(c){
+    c.onclick = function(){ send(c.dataset.cmd); };
+  });
+  /* the engine answers on the top page; show it here */
+  setInterval(function(){
+    var r = '';
+    try { r = window.top.__vpcMuseReply || ''; } catch (e) {}
+    if (r && r !== lastReply){
+      lastReply = r;
+      reply.textContent = r;
+      reply.classList.add('show');
+    }
+  }, 700);
+  window.__vpcMuseState = function(){ return { reply: lastReply }; };
+})();
+</script>
+</body>
+</html>

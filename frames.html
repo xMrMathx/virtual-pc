@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Photo frame — Virtual PC collection wall</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:#101014;color:#e9e9f2;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+       overflow:hidden;cursor:pointer;box-shadow:inset 0 0 60px rgba(0,0,0,.75), inset 0 0 8px rgba(0,0,0,.9)}
+  #img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none}
+  /* empty state: the frame itself — mat, inner shadow, a quiet cue */
+  #empty{position:absolute;inset:0;display:flex;flex-direction:column;gap:14px;align-items:center;justify-content:center;
+         background:radial-gradient(120% 120% at 50% 40%, #17171f 0%, #0c0c11 78%);text-align:center;padding:10%}
+  #empty .plus{width:15vmin;height:15vmin;min-width:44px;min-height:44px;border-radius:50%;
+         border:2px solid rgba(255,184,0,.75);color:#ffb800;display:flex;align-items:center;justify-content:center;
+         font-size:9vmin;font-weight:300;line-height:1}
+  #empty .cue{color:#9a9aad;font-size:4.2vmin;font-weight:600;letter-spacing:.4px}
+  #empty .brand{color:#565668;font-size:3vmin;letter-spacing:2.5px;font-weight:700}
+  /* filled: change / remove bar */
+  #bar{position:absolute;left:0;right:0;bottom:0;display:none;gap:8px;padding:10px;
+       background:linear-gradient(transparent, rgba(2,2,6,.88) 38%)}
+  #bar.show{display:flex}
+  #bar button{flex:1;height:52px;border-radius:11px;font-size:15px;font-weight:800;cursor:pointer}
+  #changeBtn{background:#ffb800;color:#191002;border:0}
+  #removeBtn{background:rgba(10,14,24,.9);color:#7ee7ff;border:1.5px solid rgba(0,240,255,.6)}
+</style>
+</head>
+<body>
+<img id="img" alt="">
+<div id="empty">
+  <div class="plus">+</div>
+  <div class="cue">Tap to add a photo</div>
+  <div class="brand">ALLON</div>
+</div>
+<div id="bar">
+  <button id="changeBtn">CHANGE PHOTO</button>
+  <button id="removeBtn">REMOVE</button>
+</div>
+<input id="pick" type="file" accept="image/*" style="display:none">
+
+<script>
+(function(){
+  var idx = '0';
+  try { idx = new URLSearchParams(location.search).get('f') || '0'; } catch (e) {}
+  var KEY = 'vpc_frame_' + idx;
+  var img = document.getElementById('img'), empty = document.getElementById('empty'),
+      bar = document.getElementById('bar'), pick = document.getElementById('pick');
+  var has = false;
+
+  function show(dataUrl){
+    if (dataUrl){
+      img.src = dataUrl; img.style.display = 'block'; empty.style.display = 'none'; has = true;
+    } else {
+      img.removeAttribute('src'); img.style.display = 'none'; empty.style.display = 'flex';
+      bar.classList.remove('show'); has = false;
+    }
+  }
+  function load(){
+    var v = null;
+    try { v = localStorage.getItem(KEY); } catch (e) {}
+    show(v);
+  }
+  /* Picks persist in the site's local storage; photos are downscaled
+     to a sane size first so the wall stays light. */
+  window.__vpcSetFrame = function(dataUrl){
+    try { localStorage.setItem(KEY, dataUrl); } catch (e) {}
+    show(dataUrl);
+  };
+  window.__vpcFrameState = function(){ return { has: has, idx: idx }; };
+
+  pick.addEventListener('change', function(){
+    var f = pick.files && pick.files[0];
+    if (!f) return;
+    var rd = new FileReader();
+    rd.onload = function(){
+      var im = new Image();
+      im.onload = function(){
+        var MAX = 1024, w = im.naturalWidth, h = im.naturalHeight;
+        var sc = Math.min(1, MAX / Math.max(w, h));
+        var cv = document.createElement('canvas');
+        cv.width = Math.round(w * sc); cv.height = Math.round(h * sc);
+        cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height);
+        window.__vpcSetFrame(cv.toDataURL('image/jpeg', 0.85));
+      };
+      im.src = rd.result;
+    };
+    rd.readAsDataURL(f);
+    pick.value = '';
+  });
+
+  document.body.addEventListener('click', function(){
+    if (!has){ pick.click(); return; }
+    bar.classList.toggle('show');
+  });
+  document.getElementById('changeBtn').addEventListener('click', function(e){
+    e.stopPropagation(); bar.classList.remove('show'); pick.click();
+  });
+  document.getElementById('removeBtn').addEventListener('click', function(e){
+    e.stopPropagation();
+    try { localStorage.removeItem(KEY); } catch (err) {}
+    show(null);
+  });
+
+  load();
+})();
+</script>
+</body>
+</html>

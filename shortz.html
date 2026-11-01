@@ -60,6 +60,12 @@
   #cardX{position:absolute;top:12px;right:12px;width:44px;height:44px;border-radius:50%;border:1.5px solid var(--line);
          background:#1c1c28;color:var(--ink);font-size:19px;cursor:pointer}
   #sheetWrap{position:relative;width:100%}
+  #projBtn{margin-top:10px;width:100%;height:52px;border-radius:13px;background:#0e1626;color:#7ee7ff;
+           border:1.5px solid rgba(0,240,255,.65);font-size:16.5px;font-weight:800;cursor:pointer}
+  #fsBtn{position:absolute;right:10px;bottom:10px;width:52px;height:52px;border-radius:12px;z-index:5;
+         background:rgba(5,10,18,.82);color:#fff;border:1.5px solid rgba(255,255,255,.45);
+         font-size:24px;cursor:pointer;display:none;line-height:1}
+  #fsBtn:active{background:rgba(0,60,80,.9)}
 </style>
 </head>
 <body>
@@ -74,6 +80,7 @@
     <div>Tap any title below → its card → Play.<br>It plays right here, on this screen.</div>
   </div>
   <iframe id="player" title="Shortz player" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen></iframe>
+  <button id="fsBtn" title="Watch on the big screen (Screen 1)">&#x2922;</button>
 </div>
 <div id="nowPlaying"></div>
 
@@ -92,7 +99,8 @@
       <div class="meta" id="cMeta"></div>
       <div class="desc" id="cDesc"></div>
       <div id="parts"></div>
-      <button id="playBtn">▶ &nbsp;PLAY</button>
+      <button id="playBtn">▶ &nbsp;PLAY HERE</button>
+      <button id="projBtn">&#127902; &nbsp;PLAY ON PROJECTOR</button>
     </div>
     <button id="cardX" aria-label="Close">✕</button>
   </div>
@@ -260,6 +268,40 @@
     return st;
   };
 
+  /* Flagship projector flow (his exact spec): the card's second
+     button starts the title HERE, then hands the player to the
+     projector wall — the engine hears it via the top-page flag. */
+  function setTopFlag(name){
+    try { window.top[name] = 'shortz'; } catch (e) {}
+  }
+  document.getElementById('projBtn').onclick = function(){
+    if (!current) return;
+    play(current[4], current[0]);
+    setTopFlag('__vpcPlayProjector');
+  };
+  /* Feature 25: the fullscreen button NEVER takes the phone over —
+     it promotes the playing title to Screen 1 (the engine moves this
+     very player, position and all). On Screen 1 it zooms instead;
+     while promoted it reads as an exit. Native element-fullscreen
+     requests are intercepted into the same promotion. */
+  var fsBtn = document.getElementById('fsBtn');
+  function promoted(){
+    try { return !!window.top.__vpcPromoted; } catch (e) { return false; }
+  }
+  fsBtn.onclick = function(){
+    if (promoted()) setTopFlag('__vpcUnpromote'); else setTopFlag('__vpcPromote');
+  };
+  setInterval(function(){
+    fsBtn.textContent = promoted() ? '\u2715' : '\u2922';
+    fsBtn.title = promoted() ? 'Back to this screen' : 'Watch on the big screen (Screen 1)';
+  }, 600);
+  document.addEventListener('fullscreenchange', function(){
+    if (document.fullscreenElement){
+      try { document.exitFullscreen(); } catch (e) {}
+      if (!promoted()) setTopFlag('__vpcPromote');
+    }
+  });
+
   function play(url, title){
     if (!url) return;
     wantPlay = true; lastTouchAt = Date.now();
@@ -276,6 +318,7 @@
       if (curYtId){ if (ytApi === 'ready') bindYt(); else ensureYtApi(); }
     }
     player.style.display = 'block'; idle.style.display = 'none';
+    document.getElementById('fsBtn').style.display = 'block';
     now.textContent = '\u25b6 Now playing: ' + title;
     closeCard();
     window.scrollTo(0, 0);
