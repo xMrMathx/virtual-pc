@@ -246,6 +246,7 @@
      One door for every final transcript, however it arrived
      (web SR, native bridge, typed bar, test seam). */
   var awaiting = false, lastReplySeen = '';
+  var webTurn = 0;   // bumped per user turn; stale web read-backs die
   var END_PHRASES = ['stop', 'stop talking', "that's all", 'that is all', 'goodbye',
                      'bye', 'never mind', 'nevermind', 'hang up', 'end session', 'end the session'];
   function isEndPhrase(t){
@@ -272,6 +273,7 @@
     if (V.mode !== 'off' && isEndPhrase(text)){ endSession(true); return; }
     showHeard(text, false);
     V.turns.push({ you: text });
+    webTurn++;
     setState('thinking', '<span class="gold">Thinking…</span>');
     awaiting = true;
     /* clear the reply slot BEFORE sending, so even an identical
@@ -296,7 +298,68 @@
         return;
       }
     }
+    /* Web search (Full Internet): after a search turn, read the top
+       result back in the call; after a result-open, verify the
+       surface actually took it before letting the line stand. */
+    var sm = text.match(/^Searching for (.+)\.$/);
+    if (sm){ var tkS = webTurn; speak(text, function(){ webReadBack(sm[1], tkS); }); return; }
+    var om = text.match(/^Opening result \d+\.$/);
+    if (om){ var tkO = webTurn; speak(text, function(){ webResultCheck(tkO); }); return; }
     speak(text, afterTurn);
+  }
+  /* The headline source is the same Bing RSS the browser surface
+     enumerates from, so "Top result" here is result #1 there. Any
+     failure = silence, never a guessed headline. */
+  function webReadBack(q, tk){
+    if (V.mode !== 'live' || tk !== webTurn){ afterTurn(); return; }
+    var done = false;
+    var finish = function(){ if (!done){ done = true; afterTurn(); } };
+    var to = setTimeout(finish, 6000);
+    try {
+      fetch('https://www.bing.com/search?format=rss&q=' + encodeURIComponent(q)).then(function(r){ return r.text(); }).then(function(xml){
+        clearTimeout(to);
+        if (done) return; done = true;
+        if (V.mode !== 'live' || tk !== webTurn){ afterTurn(); return; }
+        var title = '';
+        try {
+          var doc = new DOMParser().parseFromString(xml, 'text/xml');
+          var it = doc.querySelector('item title');
+          if (it) title = it.textContent || '';
+        } catch (e) {}
+        if (title){ showReply('Top result: ' + title); speak('Top result: ' + title + '.', afterTurn); }
+        else afterTurn();
+      }).catch(function(){ clearTimeout(to); finish(); });
+    } catch (e) { clearTimeout(to); finish(); }
+  }
+  /* A result-open the surface refused (results not enumerable on
+     this platform) gets corrected out loud — the optimistic line
+     never stands as a false confirmation. */
+  function webResultCheck(tk){
+    if (V.mode !== 'live' || tk !== webTurn){ afterTurn(); return; }
+    var firstHook = null, seen = false;
+    try {
+      var T0 = window.top.__vpcTrack && window.top.__vpcTrack.browser;
+      if (T0 && T0.f && T0.f.contentWindow && T0.f.contentWindow.__vpcBrowserState) firstHook = T0.f.contentWindow.__vpcBrowserState().lastHook;
+    } catch (e) {}
+    var tries = 0;
+    var iv = setInterval(function(){
+      tries++;
+      var st = null;
+      try {
+        var T = window.top.__vpcTrack && window.top.__vpcTrack.browser;
+        if (T && T.f && T.f.contentWindow && T.f.contentWindow.__vpcBrowserState) st = T.f.contentWindow.__vpcBrowserState();
+      } catch (e) {}
+      var lh = st && st.lastHook;
+      if (lh && lh !== firstHook && lh.what === 'result'){
+        seen = true;
+        clearInterval(iv);
+        if (lh.ok === false && /not-enumerable/.test(lh.detail || '')){
+          speak("Those results won't open by number here — they're on the browser screen; tap the one you want.", afterTurn);
+        } else afterTurn();
+        return;
+      }
+      if (tries >= 12 || V.mode !== 'live' || tk !== webTurn){ clearInterval(iv); afterTurn(); }
+    }, 400);
   }
   function afterTurn(){
     if (V.mode === 'live'){ setState('listening', '<b>Listening…</b> just talk — or tap HANG UP'); ensureListening(); }
