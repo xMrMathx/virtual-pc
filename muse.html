@@ -414,11 +414,55 @@
     else if (msg.type === 'final'){ wantListen = false; onFinalTranscript(msg.text || '', 'native'); }
     else if (msg.type === 'speakdone') finishSpeak();
     else if (msg.type === 'error'){
-      V.lastError = msg.text || 'native-error';
+      V.lastError = msg.text || 'unknown:0';
       log('sr:native error ' + V.lastError);
-      voiceUnavailable('The app\'s speech ear hit a problem (' + V.lastError + ') — type below and I\'ll still answer.');
+      onNativeEarError(V.lastError);
     }
   }, 200);
+
+  /* ---------------- native ear errors (Defect 28) ----------------
+     The bridge reports every ear failure as "word:code" — word from
+     its error table, code the REAL Android SpeechRecognizer ERROR_*
+     number (or 'pre' for its own mic-permission pre-check). A
+     "recovering:" prefix means the bridge is already walking its
+     recognition-service chain: the session stays ALIVE and the glass
+     just says so. Only a bare word:code is fatal, and it always
+     renders as plain words — never a raw "(recognizer-error)". */
+  function onNativeEarError(text){
+    text = String(text || '');
+    if (text.indexOf('recovering:') === 0){
+      log('sr:native recovering (' + text.slice('recovering:'.length) + ')');
+      if (V.mode !== 'off') setState('listening', 'Reconnecting my ear… one second');
+      return;
+    }
+    voiceUnavailable(plainEarError(text));
+  }
+  function plainEarError(text){
+    var parts = String(text || '').split(':');
+    var word = parts[0] || '', code = parts[1] || '';
+    switch (word){
+      case 'not-allowed':
+        return 'Microphone permission is off — allow the mic when Android asks, then tap TALK or LIVE TALK again. Typing works below, and I\'ll still answer.';
+      case 'recognizer-busy':
+        return 'The speech service is busy right now — give it a breath and tap TALK again, or type below.';
+      case 'no-match':
+        return 'I didn\'t catch any words that time — tap TALK and say it again, or type below.';
+      case 'network': case 'network-timeout':
+        return 'The speech service couldn\'t be reached just now — check the connection, or type below and I\'ll still answer.';
+      case 'audio':
+        return 'The microphone hit a problem — make sure nothing else is using it, then tap TALK again. Typing works below.';
+      case 'server':
+        return 'The phone\'s speech service answered with an error — type below and I\'ll still answer, or try TALK again in a moment.';
+      case 'client':
+        return 'My speech ear tripped over itself — tap LIVE TALK to start it fresh, or type below.';
+      case 'unavailable': case 'no-recognizer':
+        return 'No speech service on this phone answered — typing works below, and I\'ll still answer.';
+      case 'speech-timeout':
+        return 'I only heard silence that time — tap TALK when you\'re ready, or type below.';
+      default:
+        return 'My speech ear hit a problem I don\'t have a name for (error ' + (code || '?') + ') — type below and I\'ll still answer.';
+    }
+  }
 
   /* ---------------- sessions ---------------- */
   var GREETINGS = [
