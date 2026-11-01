@@ -509,9 +509,12 @@
 })();
 
 /* ---- v5.1 Feature 33: tap-a-screen app switcher. Room level only:
-   the engine raises window.__vpcSwitcher for the tapped screen; a pick
-   lands via window.__vpcSwitchTo and everything picked lives INSIDE
-   the glass (PC contents swap; apps load in their web form). ---- */
+   the engine raises window.__vpcSwitcher for the tapped screen. IN
+   THIS PC picks land via window.__vpcSwitchTo and live INSIDE the
+   glass. MY APPS picks are the REAL installed apps (his order
+   2026-11-01 ~14:24): the shell launches the actual app full-screen
+   and Back returns to the untouched room — website stand-ins are
+   gone, and without the shell the rows say so and open nothing. ---- */
 (function () {
   'use strict';
   if (window.__vpcSwitcherUi) return;
@@ -527,7 +530,10 @@
     'border-radius:11px;border:1.5px solid #2c2c3e;background:#14141f;color:#f2f2f7;cursor:pointer;text-align:left;font-size:15px;font-weight:700}',
     '.vpc-sw-row:active{border-color:#00f0ff}',
     '.vpc-sw-row .tag{margin-left:auto;font-size:11px;color:#9a9aad;font-weight:600;letter-spacing:.5px;flex:0 0 auto}',
-    '.vpc-sw-row.keep{border-color:rgba(255,184,0,.5);color:#ffd479}'
+    '.vpc-sw-row.keep{border-color:rgba(255,184,0,.5);color:#ffd479}',
+    '#vpc-switch .vpc-sw-note{margin:10px 0 2px;padding:11px 12px;border-radius:11px;',
+    'border:1.5px solid rgba(255,184,0,.55);background:rgba(255,184,0,.08);color:#ffd479;',
+    'font-size:13.5px;font-weight:600;line-height:1.45}'
   ].join('');
   document.head.appendChild(css);
   var openFor = '';
@@ -566,32 +572,87 @@
     parent.appendChild(b);
     return b;
   }
-  var WEB_APPS = [
-    { name: 'YouTube', webUrl: 'https://www.youtube.com' },
-    { name: 'Facebook', webUrl: 'https://www.facebook.com' },
-    { name: 'Instagram', webUrl: 'https://www.instagram.com' },
-    { name: 'X', webUrl: 'https://x.com' },
-    { name: 'TikTok', webUrl: 'https://www.tiktok.com' },
-    { name: 'Spotify', webUrl: 'https://open.spotify.com' }
+  /* Real-App Picker (his order 2026-11-01 ~14:24 CST): a MY APPS pick
+     is the ACTUAL installed app. The shell (APK 1.10+) launches it
+     full-screen via AllonShell.launchApp; Back returns to this room,
+     untouched. No row resolves to a web-URL pick — websites belong to
+     the browser surface, not the app picker. Without a shell that can
+     launch (plain browser, or a pre-1.10 shell) the row says so in
+     plain words and opens nothing. */
+  var REAL_APP_FALLBACK = [
+    { name: 'YouTube', pkg: 'com.google.android.youtube' },
+    { name: 'Facebook', pkg: 'com.facebook.katana' },
+    { name: 'Instagram', pkg: 'com.instagram.android' },
+    { name: 'X', pkg: 'com.twitter.android' },
+    { name: 'TikTok', pkg: 'com.zhiliaoapp.musically' },
+    { name: 'Spotify', pkg: 'com.spotify.music' }
   ];
+  function shell() {
+    try { return window.AllonShell || null; } catch (e) { return null; }
+  }
+  function bridgeList(fn) {
+    var sh = shell();
+    if (!sh || typeof sh[fn] !== 'function') return undefined;
+    var list = null;
+    try { list = sh[fn](); } catch (e) { return null; }
+    if (typeof list === 'string') { try { list = JSON.parse(list); } catch (e) { list = null; } }
+    return list;
+  }
+  function launchNote(p, text) {
+    var n = p.querySelector('.vpc-sw-note');
+    if (!n) {
+      n = document.createElement('div');
+      n.className = 'vpc-sw-note';
+      p.appendChild(n);
+    }
+    n.textContent = text;
+  }
+  function launchWords(name, res) {
+    if (res === 'err:not-installed') return name + ' isn\u2019t installed on this phone \u2014 nothing opened.';
+    if (res === 'err:no-launcher') return name + ' has no openable app screen on this phone \u2014 nothing opened.';
+    if (res === 'err:bad-package') return 'That pick isn\u2019t an app this PC can open \u2014 nothing opened.';
+    return name + ' couldn\u2019t be opened just now \u2014 nothing opened.';
+  }
+  function realAppRow(p, a) {
+    row(p, a.name, 'Real app \u2014 opens full', function () {
+      var sh = shell();
+      if (!sh) {
+        launchNote(p, a.name + ' is the real app on your phone \u2014 it opens full-screen from the PC app. In a web browser there is no app here to open, so nothing opened.');
+        return;
+      }
+      if (typeof sh.launchApp !== 'function') {
+        launchNote(p, 'This PC app is too old to open real apps \u2014 update it, and ' + a.name + ' opens full from here. Nothing opened.');
+        return;
+      }
+      var res = '';
+      try { res = String(sh.launchApp(a.pkg) || ''); } catch (e) { res = 'err:failed'; }
+      if (res === 'ok') { close(); return; }
+      launchNote(p, launchWords(a.name, res));
+    });
+  }
   function renderApps(p, screen) {
     var g = document.createElement('div');
     g.className = 'grp'; g.textContent = 'MY APPS'; p.appendChild(g);
-    var list = null;
-    try {
-      if (window.AllonShell && typeof window.AllonShell.listApps === 'function') list = window.AllonShell.listApps();
-    } catch (e) { list = null; }
-    if (typeof list === 'string') { try { list = JSON.parse(list); } catch (e) { list = null; } }
-    function draw(apps) {
+    function drawReal(apps) {
+      var n = 0;
       (apps || []).forEach(function (a) {
-        if (!a || !a.webUrl) return;
-        row(p, a.name || a.webUrl, 'web app', function () { pick({ screen: screen, webUrl: a.webUrl }); });
+        if (!a || !a.pkg || !a.name) return;
+        realAppRow(p, a); n++;
       });
+      return n;
     }
-    if (list && typeof list.then === 'function') {
-      list.then(function (apps) { draw(apps); }).catch(function () { draw(WEB_APPS); });
-    } else if (list) draw(list);
-    else draw(WEB_APPS);
+    function finish(list) {
+      if (list && typeof list.then === 'function') {
+        list.then(function (apps) { if (!drawReal(apps)) drawReal(REAL_APP_FALLBACK); }).catch(function () { drawReal(REAL_APP_FALLBACK); });
+      } else if (!drawReal(list)) drawReal(REAL_APP_FALLBACK);
+    }
+    var real = bridgeList('listRealApps');
+    if (real !== undefined) { finish(real); return; }
+    /* Shells older than 1.10 have no listRealApps: their listApps rows
+       carry the same name+pkg pairs — reuse those, drop the web URL. */
+    var legacy = bridgeList('listApps');
+    if (legacy !== undefined) { finish(legacy); return; }
+    drawReal(REAL_APP_FALLBACK);
   }
   function render(data) {
     close(false);
