@@ -568,6 +568,7 @@
     try {
       if (window.AllonShell && typeof window.AllonShell.listApps === 'function') list = window.AllonShell.listApps();
     } catch (e) { list = null; }
+    if (typeof list === 'string') { try { list = JSON.parse(list); } catch (e) { list = null; } }
     function draw(apps) {
       (apps || []).forEach(function (a) {
         if (!a || !a.webUrl) return;
