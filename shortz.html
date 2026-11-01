@@ -66,6 +66,11 @@
          background:rgba(5,10,18,.82);color:#fff;border:1.5px solid rgba(255,255,255,.45);
          font-size:24px;cursor:pointer;display:none;line-height:1}
   #fsBtn:active{background:rgba(0,60,80,.9)}
+  /* stage mode (Projector Fit Law): on the projector this page is
+     ONLY the picture — full-frame, whole video visible, no chrome */
+  body.stage header, body.stage #tools, body.stage #count, body.stage #list,
+  body.stage #nowPlaying, body.stage #card, body.stage #fsBtn{display:none !important}
+  body.stage #playerWrap{flex:1 1 auto;max-height:none;aspect-ratio:auto;height:100%}
 </style>
 </head>
 <body>
@@ -267,6 +272,12 @@
     }
     return st;
   };
+
+  /* stage mode arrives from the engine when this layer is hosted
+     on the projector wall (and leaves with it) */
+  window.addEventListener('message', function(e){
+    if (e.data && e.data.vpc === 'stage') document.body.classList.toggle('stage', !!e.data.on);
+  });
 
   /* Flagship projector flow (his exact spec): the card's second
      button starts the title HERE, then hands the player to the

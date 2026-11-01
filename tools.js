@@ -499,11 +499,116 @@
     locked = on;
     var T = window.__vpcTrack || {};
     Object.keys(T).forEach(function (k) {
-      if (T[k] && T[k].f) T[k].f.style.pointerEvents = on ? 'none' : 'auto';
+      if (T[k] && T[k].f) T[k].f.style.pointerEvents = on ? 'none' : (T[k].mode === 'zoom' ? 'auto' : 'none');
     });
     var F = window.__vpcFrames || {};
     Object.keys(F).forEach(function (i) {
       if (F[i] && F[i].f) F[i].f.style.pointerEvents = on ? 'none' : 'auto';
     });
   }, 120);
+})();
+
+/* ---- v5.1 Feature 33: tap-a-screen app switcher. Room level only:
+   the engine raises window.__vpcSwitcher for the tapped screen; a pick
+   lands via window.__vpcSwitchTo and everything picked lives INSIDE
+   the glass (PC contents swap; apps load in their web form). ---- */
+(function () {
+  'use strict';
+  if (window.__vpcSwitcherUi) return;
+  window.__vpcSwitcherUi = true;
+  var css = document.createElement('style');
+  css.textContent = [
+    '#vpc-switch{position:fixed;left:0;right:0;bottom:0;z-index:9992;max-height:74vh;overflow-y:auto;',
+    'background:rgba(8,8,16,.97);border-top:2px solid #00f0ff;box-shadow:0 -14px 44px rgba(0,0,0,.65);',
+    'color:#f2f2f7;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:12px 14px 16px}',
+    '#vpc-switch h3{margin:2px 0 4px;font-size:13px;letter-spacing:2px;color:#7ee7ff;font-weight:800}',
+    '#vpc-switch .grp{margin:12px 0 4px;font-size:11px;letter-spacing:2px;color:#9a9aad;font-weight:800}',
+    '.vpc-sw-row{display:flex;align-items:center;gap:10px;width:100%;margin:5px 0;padding:12px;',
+    'border-radius:11px;border:1.5px solid #2c2c3e;background:#14141f;color:#f2f2f7;cursor:pointer;text-align:left;font-size:15px;font-weight:700}',
+    '.vpc-sw-row:active{border-color:#00f0ff}',
+    '.vpc-sw-row .tag{margin-left:auto;font-size:11px;color:#9a9aad;font-weight:600;letter-spacing:.5px;flex:0 0 auto}',
+    '.vpc-sw-row.keep{border-color:rgba(255,184,0,.5);color:#ffd479}'
+  ].join('');
+  document.head.appendChild(css);
+  var openFor = '';
+  function close() {
+    var p = document.getElementById('vpc-switch');
+    if (p) p.remove();
+    openFor = '';
+    try { window.__vpcSwitcher = null; } catch (e) {}
+  }
+  function pick(payload) {
+    try { window.__vpcSwitchTo = JSON.stringify(payload); } catch (e) {}
+    close();
+  }
+  function row(parent, label, tag, fn) {
+    var b = document.createElement('button');
+    b.className = 'vpc-sw-row';
+    b.textContent = label;
+    if (tag) {
+      var sp = document.createElement('span');
+      sp.className = 'tag'; sp.textContent = tag; b.appendChild(sp);
+    }
+    b.onclick = fn;
+    parent.appendChild(b);
+    return b;
+  }
+  var WEB_APPS = [
+    { name: 'YouTube', webUrl: 'https://www.youtube.com' },
+    { name: 'Facebook', webUrl: 'https://www.facebook.com' },
+    { name: 'Instagram', webUrl: 'https://www.instagram.com' },
+    { name: 'X', webUrl: 'https://x.com' },
+    { name: 'TikTok', webUrl: 'https://www.tiktok.com' },
+    { name: 'Spotify', webUrl: 'https://open.spotify.com' }
+  ];
+  function renderApps(p, screen) {
+    var g = document.createElement('div');
+    g.className = 'grp'; g.textContent = 'MY APPS'; p.appendChild(g);
+    var list = null;
+    try {
+      if (window.AllonShell && typeof window.AllonShell.listApps === 'function') list = window.AllonShell.listApps();
+    } catch (e) { list = null; }
+    function draw(apps) {
+      (apps || []).forEach(function (a) {
+        if (!a || !a.webUrl) return;
+        row(p, a.name || a.webUrl, 'web app', function () { pick({ screen: screen, webUrl: a.webUrl }); });
+      });
+    }
+    if (list && typeof list.then === 'function') {
+      list.then(function (apps) { draw(apps); }).catch(function () { draw(WEB_APPS); });
+    } else if (list) draw(list);
+    else draw(WEB_APPS);
+  }
+  function render(data) {
+    close();
+    openFor = data.screen;
+    var p = document.createElement('div');
+    p.id = 'vpc-switch';
+    document.documentElement.appendChild(p);
+    var h = document.createElement('h3');
+    h.textContent = 'SCREEN ' + (data.num || '') + ' \u2014 ' + (data.name || '') + ' \u00b7 SWITCH TO';
+    p.appendChild(h);
+    var g = document.createElement('div');
+    g.className = 'grp'; g.textContent = 'IN THIS PC'; p.appendChild(g);
+    (data.contents || []).forEach(function (c) {
+      if (!c || !c.content) return;
+      var here = c.where === data.screen;
+      row(p, c.name, here ? 'already here' : (c.where ? 'on another screen' : ''), function () {
+        if (!here) pick({ screen: data.screen, content: c.content });
+      });
+    });
+    renderApps(p, data.screen);
+    var k = row(p, "Keep what's here", '', function () { close(); });
+    k.classList.add('keep');
+  }
+  setInterval(function () {
+    var d = null;
+    try { d = window.__vpcSwitcher; } catch (e) { d = null; }
+    if (d && d.screen && d.screen !== openFor) render(d);
+    if (!d && openFor) close();
+  }, 250);
+  document.addEventListener('pointerdown', function (e) {
+    var p = document.getElementById('vpc-switch');
+    if (p && openFor && !p.contains(e.target)) close();
+  }, true);
 })();

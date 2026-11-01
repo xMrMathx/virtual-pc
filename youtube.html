@@ -30,6 +30,13 @@
         background:var(--panel);color:var(--ink);font-size:14px;font-weight:600;cursor:pointer}
   .chip:active{border-color:var(--red);color:#ff8296}
   #note{padding:2px 14px 10px;color:var(--mut);font-size:12.5px;line-height:1.45;flex:1 1 auto;overflow-y:auto}
+  #tapPlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(2,2,8,.45);
+           border:0;cursor:pointer;z-index:3}
+  #tapPlay span{background:var(--red);color:#fff;font-size:21px;font-weight:900;letter-spacing:1px;
+           padding:16px 26px;border-radius:14px;box-shadow:0 10px 34px rgba(0,0,0,.6)}
+  /* stage mode (Projector Fit Law): only the picture, full-frame */
+  body.stage header, body.stage #tools, body.stage #note{display:none !important}
+  body.stage #playerWrap{flex:1 1 auto;max-height:none;aspect-ratio:auto;height:100%}
 </style>
 </head>
 <body>
@@ -46,6 +53,7 @@
   </div>
   <iframe id="player" title="YouTube player"
           allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen></iframe>
+  <button id="tapPlay"><span>&#9654; TAP TO PLAY</span></button>
 </div>
 
 <div id="tools">
@@ -63,13 +71,75 @@ lanes and pasted links all play right here, full controls, on Screen 7.</div>
 
   function showPlayer(){ player.style.display = 'block'; idle.style.display = 'none'; }
   function playId(id){
-    player.src = 'https://www.youtube-nocookie.com/embed/' + id + '?autoplay=1&rel=0&playsinline=1';
+    curId = id;
+    player.src = 'https://www.youtube-nocookie.com/embed/' + id + '?autoplay=1&rel=0&playsinline=1&enablejsapi=1';
     showPlayer();
+    armStallWatch();
+    if (ytApi === 'ready') bindYt(); else ensureYtApi();
   }
   function search(term){
+    curId = null;
     player.src = 'https://www.youtube-nocookie.com/embed?listType=search&list=' +
-                 encodeURIComponent(term) + '&autoplay=1&rel=0&playsinline=1';
+                 encodeURIComponent(term) + '&autoplay=1&rel=0&playsinline=1&enablejsapi=1';
     showPlayer();
+    armStallWatch();
+    if (ytApi === 'ready') bindYt(); else ensureYtApi();
+  }
+
+  /* D9 hardening: drive the player through the IFrame API so a stall
+     is SEEN, not silent black. If a pick has not reached playing (or
+     buffering) within a few seconds — autoplay policy, a hiccup, a
+     blocked stream — a big TAP TO PLAY rises over the player; his own
+     tap on it calls playVideo() down the real gesture chain. Player
+     errors surface as words in the note line, never a black box. */
+  var curId = null, ytApi = 'idle', ytPlayer = null, stallTimer = null;
+  var tapPlay = document.getElementById('tapPlay'), note = document.getElementById('note');
+  var NOTE_HOME = note.textContent;
+  function showTapPlay(){ tapPlay.style.display = 'flex'; }
+  function hideTapPlay(){ tapPlay.style.display = 'none'; }
+  tapPlay.addEventListener('click', function(){
+    hideTapPlay();
+    if (ytPlayer && ytPlayer.playVideo){ try { ytPlayer.playVideo(); } catch (e) {} }
+    else if (player.src) { var u = player.src; player.src = ''; player.src = u; }
+    armStallWatch();
+  });
+  function armStallWatch(){
+    hideTapPlay();
+    if (stallTimer) clearTimeout(stallTimer);
+    stallTimer = setTimeout(function(){
+      var st = -99;
+      if (ytPlayer && ytPlayer.getPlayerState){ try { st = ytPlayer.getPlayerState(); } catch (e) {} }
+      if (st !== 1 && st !== 3) showTapPlay();
+    }, 4000);
+  }
+  function ensureYtApi(){
+    if (ytApi !== 'idle') return;
+    if (window.YT && YT.Player){ ytApi = 'ready'; bindYt(); return; }
+    ytApi = 'loading';
+    var prev = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = function(){
+      if (prev) prev();
+      ytApi = 'ready'; bindYt();
+    };
+    var sc = document.createElement('script');
+    sc.src = 'https://www.youtube.com/iframe_api';
+    sc.onerror = function(){ if (ytApi === 'loading') ytApi = 'failed'; };
+    document.head.appendChild(sc);
+    setTimeout(function(){ if (ytApi === 'loading') ytApi = 'failed'; }, 6000);
+  }
+  function bindYt(){
+    if (ytPlayer) return;
+    try {
+      ytPlayer = new YT.Player('player', { events: {
+        'onStateChange': function(e){
+          if (e.data === 1){ hideTapPlay(); note.textContent = NOTE_HOME; }
+        },
+        'onError': function(e){
+          note.textContent = 'YouTube refused that one (error ' + (e && e.data) + ') — try another lane, a link, or a different search.';
+          showTapPlay();
+        }
+      }});
+    } catch (err) { ytPlayer = null; }
   }
   function go(raw){
     raw = (raw || '').trim();
@@ -91,7 +161,19 @@ lanes and pasted links all play right here, full controls, on Screen 7.</div>
 
   /* other PC surfaces can send YouTube places */
   window.__vpcYouTubeGo = function(raw){ go(raw); };
-  window.__vpcYouTubeState = function(){ return { playing: player.style.display === 'block', src: player.src || '' }; };
+  window.__vpcYouTubeState = function(){
+    var st = { playing: player.style.display === 'block', src: player.src || '', yt: null, t: null };
+    if (ytPlayer && ytPlayer.getPlayerState){
+      try { st.yt = ytPlayer.getPlayerState(); st.t = ytPlayer.getCurrentTime(); } catch (e) {}
+    }
+    return st;
+  };
+
+  /* stage mode arrives from the engine when this layer is hosted
+     on the projector wall (and leaves with it) */
+  window.addEventListener('message', function(e){
+    if (e.data && e.data.vpc === 'stage') document.body.classList.toggle('stage', !!e.data.on);
+  });
 })();
 </script>
 </body>
