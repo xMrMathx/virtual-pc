@@ -61,40 +61,110 @@
   <div id="chips"></div>
 </div>
 <div id="note">YouTube's own site won't live inside another app's screen (it locks its
-pages) — so this screen runs YouTube through its official player: search results,
-lanes and pasted links all play right here, full controls, on Screen 7.</div>
+pages) — so this screen runs YouTube through its official player. Every lane below is
+stocked with picks verified to play inside apps; if a video's owner ever blocks it,
+this screen skips to the next one on its own.</div>
 
 <script>
 (function(){
   var player = document.getElementById('player'), idle = document.getElementById('idle'),
       q = document.getElementById('q'), chips = document.getElementById('chips');
 
+  /* D12 — THE SUPPLY. The old page shipped NO videos: lanes fired a raw
+     search embed and YouTube served whatever came first — often a video
+     whose owner disabled embedding (error 150, "This video is
+     unavailable"), and the page dead-ended on it. Every ID below was
+     verified embeddable through YouTube's oEmbed endpoint at fix time
+     (2026-11-01; table in proofs/v5.2/). Each lane is a QUEUE: if a
+     video ever refuses (150/101/100/153), the player auto-skips to the
+     next verified pick instead of stranding him on "unavailable". */
+  var LANES = {
+    'Music':   ['YQHsXMglC9A', '82-jTNka3uc', 'B402rKl4bUg', 'HuvGir8xjJU'],
+    'Gaming':  ['rFHOT4Mb_yI', 'zCFZbcO-1HU', 'rk3H6xY8h24', 'sTmmXz8EdKY', 'imLCInVZym0'],
+    'News':    ['umLWFz4izTM', 'cidZ807JTBo', 'czhHzndEUFE'],
+    'Comedy':  ['JHbgA38R1OM', 'FEnEutR31B4', 'CpP0yPHbe5A', 'ZfLAP-RaEwM'],
+    'Sports':  ['Y9uHYYftdV0', 'u7oaBlNbO5s', 'a3JIPHlifzE', 'IuaPWYUAoKI'],
+    'Movies':  ['3gUwXZOG_AY', 'oBCGqylIbU8', '_PS6rQBXJ54', 'QBBlPoRrZdA'],
+    'Science': ['dBz6X0dhflA', 'efJYrzOey0M', 'zprpH_5qFF0', '5c5sKDHqS_k'],
+    'Cooking': ['P6W8kwmwcno', 'Xao87NNSfiM', 'V4E19PZE5ec', 'I5qVdS22sgc']
+  };
+  var DEFAULT_LANE = 'Music';
+
   function showPlayer(){ player.style.display = 'block'; idle.style.display = 'none'; }
-  function playId(id){
-    curId = id;
-    player.src = 'https://www.youtube-nocookie.com/embed/' + id + '?autoplay=1&rel=0&playsinline=1&enablejsapi=1';
-    showPlayer();
-    armStallWatch();
-    if (ytApi === 'ready') bindYt(); else ensureYtApi();
+  function originParam(){
+    return (location.origin && location.origin.indexOf('http') === 0)
+      ? '&origin=' + encodeURIComponent(location.origin) : '';
   }
-  function search(term){
-    curId = null;
-    player.src = 'https://www.youtube-nocookie.com/embed?listType=search&list=' +
-                 encodeURIComponent(term) + '&autoplay=1&rel=0&playsinline=1&enablejsapi=1';
-    showPlayer();
-    armStallWatch();
-    if (ytApi === 'ready') bindYt(); else ensureYtApi();
+  function embedUrl(id, autoplay){
+    return 'https://www.youtube-nocookie.com/embed/' + id +
+           '?autoplay=' + (autoplay ? 1 : 0) + '&rel=0&playsinline=1&enablejsapi=1' + originParam();
   }
 
-  /* D9 hardening: drive the player through the IFrame API so a stall
-     is SEEN, not silent black. If a pick has not reached playing (or
-     buffering) within a few seconds — autoplay policy, a hiccup, a
-     blocked stream — a big TAP TO PLAY rises over the player; his own
-     tap on it calls playVideo() down the real gesture chain. Player
-     errors surface as words in the note line, never a black box. */
-  var curId = null, ytApi = 'idle', ytPlayer = null, stallTimer = null;
+  var queue = [], qIdx = 0, mode = 'queue'; /* 'queue' | 'search' | 'single' */
+  var curId = null, skips = 0, searchErrs = 0;
+  var ytApi = 'idle', ytPlayer = null, stallTimer = null;
   var tapPlay = document.getElementById('tapPlay'), note = document.getElementById('note');
   var NOTE_HOME = note.textContent;
+
+  function loadCurrent(autoplay){
+    curId = queue[qIdx] || null;
+    if (!curId) return;
+    player.src = embedUrl(curId, autoplay);
+    showPlayer();
+    if (autoplay) armStallWatch(); else hideTapPlay();
+    rebind();
+  }
+  function playQueue(ids, autoplay){
+    queue = ids.slice(); qIdx = 0; mode = 'queue'; skips = 0;
+    loadCurrent(autoplay);
+  }
+  function playLane(lane){
+    if (LANES[lane]) playQueue(LANES[lane], true);
+  }
+  function playId(id){
+    queue = [id]; qIdx = 0; mode = 'single'; skips = 0;
+    loadCurrent(true);
+  }
+  function search(term){
+    mode = 'search'; searchErrs = 0; curId = null;
+    player.src = 'https://www.youtube-nocookie.com/embed?listType=search&list=' +
+                 encodeURIComponent(term) + '&autoplay=1&rel=0&playsinline=1&enablejsapi=1' + originParam();
+    showPlayer();
+    armStallWatch();
+    rebind();
+  }
+
+  /* D12 auto-skip: a refused video is a step, never a wall. */
+  function advance(reason){
+    skips++;
+    if (mode === 'search'){
+      searchErrs++;
+      if (searchErrs <= 4 && ytPlayer && ytPlayer.nextVideo){
+        try { ytPlayer.nextVideo(); armStallWatch(); return; } catch (e) {}
+      }
+      note.textContent = 'That search kept hitting videos whose owners block them inside apps — here is a lane that plays.';
+      playLane(DEFAULT_LANE);
+      return;
+    }
+    if (qIdx + 1 < queue.length){
+      qIdx++;
+      note.textContent = 'That one\'s owner blocks it inside apps — skipped to the next pick.';
+      loadCurrent(true);
+      return;
+    }
+    if (mode === 'single'){
+      note.textContent = 'That link\'s owner blocks playback inside apps — playing a verified pick instead.';
+      playLane(DEFAULT_LANE);
+      return;
+    }
+    /* a whole verified lane refused (should not happen): rest on idle */
+    note.textContent = 'Every pick in that lane refused just now (' + reason + ') — try another lane or a search.';
+    player.style.display = 'none'; idle.style.display = 'flex'; hideTapPlay();
+  }
+
+  /* D9 hardening (kept): drive the player through the IFrame API so a
+     stall is SEEN, not silent black. TAP TO PLAY is now only the stall
+     fallback — refusals skip on their own before it ever rises. */
   function showTapPlay(){ tapPlay.style.display = 'flex'; }
   function hideTapPlay(){ tapPlay.style.display = 'none'; }
   tapPlay.addEventListener('click', function(){
@@ -127,16 +197,31 @@ lanes and pasted links all play right here, full controls, on Screen 7.</div>
     document.head.appendChild(sc);
     setTimeout(function(){ if (ytApi === 'loading') ytApi = 'failed'; }, 6000);
   }
+  function rebind(){
+    /* fresh embed navigation: drop the old API handle so error and
+       state events attach to the video actually on screen */
+    if (ytPlayer){ try { ytPlayer.destroy(); } catch (e) {} ytPlayer = null; }
+    if (ytApi === 'ready') bindYt(); else ensureYtApi();
+  }
   function bindYt(){
     if (ytPlayer) return;
     try {
       ytPlayer = new YT.Player('player', { events: {
         'onStateChange': function(e){
-          if (e.data === 1){ hideTapPlay(); note.textContent = NOTE_HOME; }
+          if (e.data === 1){ hideTapPlay(); skips = 0; searchErrs = 0; if (note.textContent !== NOTE_HOME && mode !== 'queue') {} }
+          if (e.data === 0 && mode === 'queue' && qIdx + 1 < queue.length && skips === 0){
+            /* a lane pick ended: roll into the lane's next verified pick */
+            qIdx++; loadCurrent(true);
+          }
         },
         'onError': function(e){
-          note.textContent = 'YouTube refused that one (error ' + (e && e.data) + ') — try another lane, a link, or a different search.';
-          showTapPlay();
+          var code = e && e.data;
+          if (code === 100 || code === 101 || code === 150 || code === 153){
+            advance('error ' + code);
+          } else {
+            note.textContent = 'YouTube hit a snag (error ' + code + ') — skipping ahead.';
+            advance('error ' + code);
+          }
         }
       }});
     } catch (err) { ytPlayer = null; }
@@ -152,17 +237,18 @@ lanes and pasted links all play right here, full controls, on Screen 7.</div>
   q.addEventListener('keydown', function(e){ if (e.key === 'Enter') go(q.value); });
   q.addEventListener('change', function(){ go(q.value); });
 
-  ['Music', 'Gaming', 'News', 'Comedy', 'Sports', 'Movies', 'Science', 'Cooking'].forEach(function(lane){
+  Object.keys(LANES).forEach(function(lane){
     var b = document.createElement('button');
     b.className = 'chip'; b.textContent = lane;
-    b.onclick = function(){ q.value = lane; search(lane); };
+    b.onclick = function(){ q.value = lane; playLane(lane); };
     chips.appendChild(b);
   });
 
   /* other PC surfaces can send YouTube places */
   window.__vpcYouTubeGo = function(raw){ go(raw); };
   window.__vpcYouTubeState = function(){
-    var st = { playing: player.style.display === 'block', src: player.src || '', yt: null, t: null };
+    var st = { playing: player.style.display === 'block', src: player.src || '', yt: null, t: null,
+               id: curId, mode: mode, qi: qIdx, qn: queue.length, skips: skips };
     if (ytPlayer && ytPlayer.getPlayerState){
       try { st.yt = ytPlayer.getPlayerState(); st.t = ytPlayer.getCurrentTime(); } catch (e) {}
     }
@@ -174,6 +260,10 @@ lanes and pasted links all play right here, full controls, on Screen 7.</div>
   window.addEventListener('message', function(e){
     if (e.data && e.data.vpc === 'stage') document.body.classList.toggle('stage', !!e.data.on);
   });
+
+  /* first open: a proven-playable pick, cued and ready — never the
+     empty idle, never a search gamble */
+  playQueue(LANES[DEFAULT_LANE], false);
 })();
 </script>
 </body>
