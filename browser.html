@@ -179,7 +179,8 @@
     'github.com', 'reddit.com', 'paypal.com', 'chase.com', 'bankofamerica.com',
     'wellsfargo.com', 'capitalone.com', 'americanexpress.com', 'fidelity.com',
     'vanguard.com', 'schwab.com', 'login.microsoftonline.com', 'appleid.apple.com',
-    'accounts.google.com', 'open.spotify.com', 'twitch.tv'];
+    'accounts.google.com', 'open.spotify.com', 'twitch.tv',
+    'discord.com', 'discordapp.com'];
 
   var pagesEl = document.getElementById('pages');
   var tabsEl = document.getElementById('tabs');
@@ -245,9 +246,15 @@
         return t;
       });
       S.active = Math.min(Math.max(0, d.active || 0), S.tabs.length - 1);
-      /* re-point every restored tab's frame at its current page */
+      /* re-point every restored tab's frame at its current page —
+         but a persisted tab is not exempt from the wall check: a
+         walled URL restored raw shows the browser's own blocked
+         error page in the glass (his wrong-site bug: a stale
+         discord.com tab sat behind a ✓ reply). Wall it at the door
+         instead, exactly like a fresh navigation. */
       S.tabs.forEach(function (t) {
         var u = tabUrl(t);
+        if (u && !t.door && isWalled(u)) { t.door = { url: u, why: 'walled' }; }
         if (u && !t.door) { t.loading = true; frameFor(t).src = u; armWatchdog(t); }
       });
       return true;
