@@ -87,9 +87,16 @@
   }
   #send{height:40px;padding:0 16px;border-radius:10px;border:1.5px solid var(--line);background:var(--panel);
         color:var(--mut);font-weight:800;font-size:13px;cursor:pointer;flex:0 0 auto}
+  /* Folder green dot (his order 2026-11-01 ~13:11 CST): upper-left of
+     ALLON's square. Lit ⇔ a Babyboo board turn is waiting that he has
+     not answered yet (his reply is the acknowledgement). Silent —
+     no sound, no popup, nothing to tap; a steady light, no blinking. */
+  #boardDot{position:fixed;top:10px;left:10px;width:11px;height:11px;border-radius:50%;
+        background:#2ee66b;box-shadow:0 0 8px #2ee66bcc;z-index:60;display:none}
 </style>
 </head>
 <body>
+<div id="boardDot" title="New word from Babyboo in the folder"></div>
 <div id="stage">
   <div id="presence" data-state="idle">
     <div id="ring"><img id="face" src="allon-bust.png" alt="ALLON"></div>
@@ -658,6 +665,43 @@
   window.__vpcMuseTestInterim = function(text){ onInterim(text); };
   window.__vpcMuseTestEnd = function(){ endSession(false); };
   log('muse ready: srCtor=' + V.srCtor + ' tts=' + V.tts + ' bridge=' + V.bridge);
+})();
+</script>
+<script>
+/* Folder green dot — independent of the talker above. Polls the same
+   board.md his glass and Babyboo's glass read; the dot is a pure
+   function of board state: lit ⇔ the newest board entry is Babyboo's
+   (a turn waiting for ALLON; his reply posting is the ack). Fetch
+   failure keeps the last known state — the dot never invents a light. */
+(function(){
+  var dot = document.getElementById('boardDot');
+  var state = { lit: false, lastFrom: '', babybooTurns: 0, allonTurns: 0 };
+  window.__vpcAllonDot = function(){ return { lit: state.lit, lastFrom: state.lastFrom,
+    babybooTurns: state.babybooTurns, allonTurns: state.allonTurns }; };
+  function authors(md){
+    var out = [], lines = md.split('\n');
+    for (var i = 0; i < lines.length; i++){
+      var m = lines[i].match(/^\*\*Entry\s+\d+\s+—\s+(Babyboo|ALLON)\b/) ||
+              lines[i].match(/^###.*—\s+(Babyboo|ALLON)\s+to\s+(?:ALLON|Babyboo)\b/);
+      if (m) out.push(m[1]);
+    }
+    return out;
+  }
+  function poll(){
+    fetch('board.md?t=' + Date.now(), { cache: 'no-store' }).then(function(r){
+      if (!r.ok) throw new Error('board ' + r.status);
+      return r.text();
+    }).then(function(md){
+      var a = authors(md), bb = 0, al = 0;
+      for (var i = 0; i < a.length; i++){ if (a[i] === 'Babyboo') bb++; else al++; }
+      state.lastFrom = a.length ? a[a.length - 1] : '';
+      state.babybooTurns = bb; state.allonTurns = al;
+      state.lit = state.lastFrom === 'Babyboo';
+      dot.style.display = state.lit ? 'block' : 'none';
+    }).catch(function(){ /* keep last known state */ });
+  }
+  poll();
+  setInterval(poll, 20000);
 })();
 </script>
 </body>
