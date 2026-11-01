@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cloud Gaming</title>
+<style>
+  :root{--bg:#0b0b10;--panel:#14141c;--line:#262633;--ink:#f2f2f7;--mut:#9a9aad;
+        --cyan:#00f0ff;--violet:#b26bff;--gold:#ffb800}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+       display:flex;flex-direction:column;overflow:hidden}
+  header{padding:10px 14px 8px;display:flex;align-items:baseline;gap:10px;border-bottom:1px solid var(--line);flex:0 0 auto}
+  header .logo{font-weight:900;font-size:22px;letter-spacing:.5px}
+  header .logo b{color:var(--violet)}
+  header .sub{color:var(--mut);font-size:12px}
+
+  /* THE STAGE — the stream area. A 16:9 picture box contain-fitted into
+     whatever glass this surface lands on (JS fit(): every corner of the
+     picture inside the wrap, zero crop, zero stretch, zero bleed). The
+     leftover glass is DRESSED, never dead black: ambient neon glow in
+     the room's language breathes around the picture. */
+  #stageWrap{position:relative;flex:1 1 auto;display:flex;align-items:center;justify-content:center;overflow:hidden;
+    background:
+      radial-gradient(120% 90% at 18% 0%, rgba(178,107,255,.20), transparent 55%),
+      radial-gradient(120% 90% at 82% 100%, rgba(0,240,255,.16), transparent 55%),
+      radial-gradient(60% 45% at 50% 50%, rgba(0,240,255,.07), transparent 70%),
+      #07070d}
+  #stage{position:relative;background:#05060a;border:1.5px solid rgba(0,240,255,.35);border-radius:10px;
+    box-shadow:0 0 34px rgba(178,107,255,.28), 0 0 14px rgba(0,240,255,.20), inset 0 0 0 1px rgba(0,0,0,.6);
+    overflow:hidden;display:flex;flex-direction:column}
+  #frame{position:absolute;inset:0;width:100%;height:100%;border:0;display:none;background:#000}
+  #board{position:absolute;inset:0;display:flex;flex-direction:column;padding:14px 16px;overflow-y:auto}
+  #verdict{font-size:13.5px;line-height:1.5;color:#d8d8e4;margin-bottom:12px}
+  #verdict b{color:var(--ink)}
+  .svc{display:flex;align-items:center;gap:12px;width:100%;text-align:left;margin:5px 0;padding:12px 14px;
+    border-radius:12px;border:1.5px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
+  .svc:active{border-color:var(--violet)}
+  .svc .nm{font-size:17px;font-weight:800;letter-spacing:.3px}
+  .svc .ln{font-size:12.5px;color:var(--mut);line-height:1.4;margin-top:2px}
+  .svc .tag{margin-left:auto;flex:0 0 auto;font-size:10.5px;font-weight:800;letter-spacing:1px;
+    color:var(--gold);border:1.5px solid rgba(255,184,0,.55);border-radius:999px;padding:5px 9px;white-space:nowrap}
+  .svc .go{flex:0 0 auto;font-size:13px;font-weight:900;color:#0a0a12;background:var(--cyan);
+    border-radius:9px;padding:9px 13px;letter-spacing:.5px}
+
+  /* slim info strip: service state + honest gamepad state */
+  #strip{flex:0 0 auto;display:flex;align-items:center;gap:14px;padding:8px 14px;border-top:1px solid var(--line);
+    background:rgba(10,10,18,.92);font-size:12.5px;color:var(--mut)}
+  #pad{font-weight:700;color:#d8d8e4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #pad.on{color:#7dff9a}
+  #svcState{margin-left:auto;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  /* stage mode (Projector Fit Law): only the stage, full-frame */
+  body.stage header, body.stage #strip{display:none !important}
+  body.stage #stageWrap{flex:1 1 auto}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">CLOUD <b>GAMING</b></div>
+  <div class="sub">the big services, checked against this glass</div>
+</header>
+
+<div id="stageWrap">
+  <div id="stage">
+    <div id="board">
+      <div id="verdict">Checked against this glass: <b>none of the three majors will play
+        inside another app's screen</b> — each one locks its player. So every pick below
+        <b>opens full view</b>: your game runs there, and your back button brings you
+        straight back to this PC. Nothing here is faked.</div>
+      <div id="cards"></div>
+    </div>
+    <iframe id="frame" title="Cloud gaming player"
+            allow="gamepad; autoplay; fullscreen; encrypted-media; picture-in-picture; cross-origin-isolated"
+            allowfullscreen></iframe>
+  </div>
+</div>
+
+<div id="strip">
+  <div id="pad">&#127918; No controller yet — pair one and press any button</div>
+  <div id="svcState">Pick a service above</div>
+</div>
+
+<script>
+(function(){
+  var wrap = document.getElementById('stageWrap'), stage = document.getElementById('stage'),
+      frame = document.getElementById('frame'), board = document.getElementById('board'),
+      cards = document.getElementById('cards'), padEl = document.getElementById('pad'),
+      svcState = document.getElementById('svcState');
+
+  /* THE SUPPLY — verified 2026-11-01 against the services' own response
+     headers (proofs/v5.2/gaming_headers.txt). A service earns 'inglass'
+     only when its player origin allows framing AND loads in the glass;
+     all three majors refuse at the header level today:
+       GeForce NOW  play.geforcenow.com   X-Frame-Options: DENY
+       Xbox Cloud   xbox.com/play         X-Frame-Options: DENY
+       Luna         luna.amazon.com       X-Frame-Options: SAMEORIGIN
+     So every pick takes the full-view trip — the same honest door the
+     PC uses whenever a thing can't live in the glass. */
+  var SERVICES = [
+    { id: 'gfn',  name: 'GeForce NOW',       url: 'https://play.geforcenow.com',
+      verdict: 'fullview', line: 'NVIDIA locks its player out of other apps\u2019 screens.' },
+    { id: 'xbox', name: 'Xbox Cloud Gaming', url: 'https://www.xbox.com/play',
+      verdict: 'fullview', line: 'Microsoft locks its player out of other apps\u2019 screens.' },
+    { id: 'luna', name: 'Amazon Luna',       url: 'https://luna.amazon.com',
+      verdict: 'fullview', line: 'Amazon only lets Luna play on Luna\u2019s own page.' }
+  ];
+
+  /* ---- the full-view trip: this view goes top-level to the service;
+     Back returns to the room untouched (the D14 pattern). A record of
+     the trip is left on the top frame first, so it is provable. ---- */
+  function trip(svc){
+    svcState.textContent = 'Opening ' + svc.name + ' full view\u2026';
+    try { window.top.__vpcGamingTrip = svc.id; } catch (e) {}
+    try {
+      window.top.localStorage.setItem('vpc_gaming_return',
+        JSON.stringify({ svc: svc.id, t: Date.now() }));
+    } catch (e) {}
+    window.top.location.href = svc.url;
+  }
+
+  /* an in-glass player, for the day a service passes verification:
+     it would live in #frame, inside the contain-fitted stage */
+  function playInGlass(svc){
+    frame.src = svc.url;
+    frame.style.display = 'block';
+    board.style.display = 'none';
+    svcState.textContent = svc.name + ' — playing on this screen';
+  }
+
+  SERVICES.forEach(function(svc){
+    var b = document.createElement('button');
+    b.className = 'svc'; b.dataset.svc = svc.id;
+    var tx = document.createElement('span');
+    var nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = svc.name;
+    var ln = document.createElement('div'); ln.className = 'ln'; ln.textContent = svc.line;
+    tx.appendChild(nm); tx.appendChild(ln);
+    b.appendChild(tx);
+    var tag = document.createElement('span'); tag.className = 'tag';
+    tag.textContent = svc.verdict === 'inglass' ? 'PLAYS INSIDE' : 'OPENS FULL VIEW';
+    b.appendChild(tag);
+    var go = document.createElement('span'); go.className = 'go'; go.textContent = 'OPEN \u2192';
+    b.appendChild(go);
+    b.onclick = function(){ if (svc.verdict === 'inglass') playInGlass(svc); else trip(svc); };
+    cards.appendChild(b);
+  });
+
+  /* ---- FIT: the stage is the stream area — contain-fit 16:9 inside
+     the wrap at every glass shape; corners measured, never cropped. */
+  function fit(){
+    var W = wrap.clientWidth, H = wrap.clientHeight;
+    if (!W || !H) return;
+    var w = W, h = Math.round(w * 9 / 16);
+    if (h > H) { h = H; w = Math.round(h * 16 / 9); }
+    stage.style.width = w + 'px';
+    stage.style.height = h + 'px';
+  }
+  window.addEventListener('resize', fit);
+  if (window.ResizeObserver) new ResizeObserver(fit).observe(wrap);
+  fit();
+
+  /* ---- gamepad state, honestly: the strip says what the platform
+     actually reports, nothing more. */
+  var padName = '';
+  function padScan(){
+    var gps = null;
+    try { gps = navigator.getGamepads ? navigator.getGamepads() : null; } catch (e) { gps = null; }
+    var found = null;
+    if (gps) for (var i = 0; i < gps.length; i++) { if (gps[i]) { found = gps[i]; break; } }
+    if (found) {
+      var id = String(found.id || 'Controller').slice(0, 60);
+      if (padName !== id) {
+        padName = id;
+        padEl.textContent = '\u{1F3AE} Controller connected: ' + id;
+        padEl.classList.add('on');
+      }
+    } else if (padName !== '') {
+      padName = '';
+      padEl.textContent = '\u{1F3AE} No controller yet — pair one and press any button';
+      padEl.classList.remove('on');
+    }
+  }
+  window.addEventListener('gamepadconnected', padScan);
+  window.addEventListener('gamepaddisconnected', padScan);
+  setInterval(padScan, 700);
+  padScan();
+
+  /* state other surfaces (and the proof harness) can read */
+  window.__vpcGamingState = function(){
+    var wr = wrap.getBoundingClientRect(), sr = stage.getBoundingClientRect();
+    var inside = sr.left >= wr.left - 1 && sr.top >= wr.top - 1 &&
+                 sr.right <= wr.right + 1 && sr.bottom <= wr.bottom + 1;
+    return {
+      services: SERVICES.map(function(s){ return { id: s.id, verdict: s.verdict }; }),
+      stage: { w: Math.round(sr.width), h: Math.round(sr.height) },
+      wrap: { w: Math.round(wr.width), h: Math.round(wr.height) },
+      contained: inside,
+      aspect: sr.height ? +(sr.width / sr.height).toFixed(3) : 0,
+      pad: padEl.textContent,
+      inGlass: frame.style.display === 'block'
+    };
+  };
+
+  /* stage mode arrives from the engine when this layer is hosted
+     on the projector wall (and leaves with it) */
+  window.addEventListener('message', function(e){
+    if (e.data && e.data.vpc === 'stage'){
+      document.body.classList.toggle('stage', !!e.data.on);
+      setTimeout(fit, 30);
+    }
+  });
+})();
+</script>
+</body>
+</html>

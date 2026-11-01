@@ -651,9 +651,10 @@
     shortz: 'https://xmrmathx.github.io/shortz-tv/',
     browser: 'browser.html',
     youtube: 'youtube.html',
-    muse: 'muse.html'
+    muse: 'muse.html',
+    gaming: 'gaming.html'
   };
-  var NAMES = { hq: 'YOUR OFFICE', shortz: 'SHORTZ', browser: 'THE BROWSER', youtube: 'YOUTUBE', muse: 'MUSE' };
+  var NAMES = { hq: 'YOUR OFFICE', shortz: 'SHORTZ', browser: 'THE BROWSER', youtube: 'YOUTUBE', muse: 'MUSE', gaming: 'CLOUD GAMING' };
   var reg = {};      /* key -> {entry, f, src, readable, escaped} */
   var authKey = '';
   var authEscaped = false;
