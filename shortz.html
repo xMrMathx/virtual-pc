@@ -46,7 +46,11 @@
   /* description card (card-first: a tap describes, the card plays) */
   #card{position:fixed;inset:0;z-index:10;display:none;align-items:flex-end;background:rgba(2,2,6,.55)}
   #card.open{display:flex}
-  #sheet{background:var(--panel);width:100%;max-height:82%;overflow-y:auto;border-radius:18px 18px 0 0;
+  /* max-height must be vh, NOT %: the % resolved against #sheetWrap, whose
+     height is content-sized (indefinite), so it was treated as none — the
+     sheet grew to full content height, spilled above the viewport (title,
+     Part 1 and the close X unreachable) and never became a scroll box. */
+  #sheet{background:var(--panel);width:100%;max-height:82vh;overflow-y:auto;border-radius:18px 18px 0 0;
          border-top:2px solid var(--cyan);padding:18px 18px 24px}
   #sheet h2{font-size:20px;line-height:1.25;margin-right:44px}
   #sheet .meta{color:var(--gold);font-size:13.5px;margin:8px 0}
@@ -193,8 +197,14 @@
       });
     }
     card.classList.add('open');
+    /* NAMED CASE #1 anchor (Great Sweep): the sheet can keep its scroll
+       position across opens on engines that don't reset it when the
+       card hides (his phone opened a 69-part card at Part 13). Every
+       card opens anchored at the TOP by construction, not courtesy. */
+    var sh = document.getElementById('sheet'); if (sh) sh.scrollTop = 0;
   }
-  function closeCard(){ card.classList.remove('open'); }
+  function closeCard(){ card.classList.remove('open');
+    var sh2 = document.getElementById('sheet'); if (sh2) sh2.scrollTop = 0; }
   document.getElementById('cardX').onclick = closeCard;
   card.addEventListener('click', function(e){ if (e.target === card) closeCard(); });
   document.getElementById('playBtn').onclick = function(){ if (current) play(current[4], current[0], ctxFor(current, -1, current[4])); };
