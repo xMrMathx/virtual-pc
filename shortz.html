@@ -185,10 +185,10 @@
     document.getElementById('cDesc').textContent = r[3] || 'No description on file for this title.';
     var parts = document.getElementById('parts'); parts.innerHTML = '';
     if (r[5] && r[5].length > 1){
-      r[5].forEach(function(p){
+      r[5].forEach(function(p, i){
         var b = document.createElement('button'); b.className = 'part';
         b.textContent = 'Part ' + p[0];
-        b.onclick = function(){ play(p[1], r[0]); };
+        b.onclick = function(){ play(p[1], r[0], ctxFor(r, i)); };
         parts.appendChild(b);
       });
     }
@@ -197,7 +197,7 @@
   function closeCard(){ card.classList.remove('open'); }
   document.getElementById('cardX').onclick = closeCard;
   card.addEventListener('click', function(e){ if (e.target === card) closeCard(); });
-  document.getElementById('playBtn').onclick = function(){ if (current) play(current[4], current[0]); };
+  document.getElementById('playBtn').onclick = function(){ if (current) play(current[4], current[0], ctxFor(current, -1, current[4])); };
 
   var player = document.getElementById('player'), idle = document.getElementById('playerIdle'),
       now = document.getElementById('nowPlaying');
@@ -247,16 +247,22 @@
     try {
       ytPlayer = new YT.Player('player', { events: {
         'onReady': function(){ player = document.getElementById('player'); },
-        'onStateChange': onYtState
+        'onStateChange': onYtState,
+        'onError': onYtError
       }});
     } catch (e) { ytPlayer = null; }
   }
   function onYtState(e){
-    if (!wantPlay || !ytPlayer) return;
-    if (e.data === 0){ wantPlay = false; return; }          // ENDED is real
+    if (!ytPlayer) return;
+    if (e.data === 0){ if (wantPlay) advance('ended'); return; }   // ENDED → next episode (Defect 24)
+    if (!wantPlay) return;
     if (e.data === 2 && Date.now() - lastTouchAt > 1500){   // PAUSED, not his tap
       try { ytPlayer.playVideo(); } catch (err) {}
     }
+  }
+  function onYtError(e){
+    lastYtError = (e && typeof e.data !== 'undefined') ? e.data : -1;
+    advance('error');   // a refused/dead video skips forward, never strands him (D12 discipline)
   }
   setInterval(function(){
     if (!wantPlay || !ytPlayer || !curYtId) return;
@@ -266,7 +272,12 @@
 
   /* Read-only playback state for the PC's own status surface. */
   window.__vpcShortzState = function(){
-    var st = { wantPlay: wantPlay, ytId: curYtId, yt: null, t: null };
+    var st = { wantPlay: wantPlay, ytId: curYtId, yt: null, t: null,
+               series: ctx && ctx.rec ? ctx.rec[0] : null,
+               part: ctx ? ctx.idx : null,
+               parts: ctx && ctx.parts ? ctx.parts.length : null,
+               partLabel: ctx && ctx.parts && ctx.idx >= 0 ? ctx.parts[ctx.idx][0] : null,
+               nowText: now.textContent, lastError: lastYtError };
     if (ytPlayer && ytPlayer.getPlayerState){
       try { st.yt = ytPlayer.getPlayerState(); st.t = ytPlayer.getCurrentTime(); } catch (e) {}
     }
@@ -287,7 +298,7 @@
   }
   document.getElementById('projBtn').onclick = function(){
     if (!current) return;
-    play(current[4], current[0]);
+    play(current[4], current[0], ctxFor(current, -1, current[4]));
     setTopFlag('__vpcPlayProjector');
   };
   /* Feature 25: the fullscreen button NEVER takes the phone over —
@@ -309,12 +320,75 @@
   document.addEventListener('fullscreenchange', function(){
     if (document.fullscreenElement){
       try { document.exitFullscreen(); } catch (e) {}
-      if (!promoted()) setTopFlag('__vpcPromote');
+      /* Defect 15: in stage mode this page IS the big picture (the
+         projector wall). An embed raising a fullscreen event on its
+         own — mobile players do this unprompted — is not the user
+         asking to move the player, so it raises no promote flag. */
+      if (!promoted() && !document.body.classList.contains('stage')) setTopFlag('__vpcPromote');
     }
   });
 
-  function play(url, title){
+  /* ── Defect 24: play like OUR player — a series CONTINUES ──────
+     The catalog feed gives every multi-part title its episode list
+     (record[5]: [episodeNumber, url] in play order). The page now
+     remembers WHAT is in the player and WHICH part it is (ctx), so
+     when a part ends, the next one loads and plays on its own —
+     the real Shortz VS app behavior — on any screen this page is
+     swapped onto and on the projector wall (stage mode is the same
+     document; the advance lives in the player itself). A part that
+     refuses (embed error) is skipped forward to the next playable
+     one. The LAST part ends clean: state off, a Finished line, the
+     browse untouched — no dead black box, no phantom advance for
+     movies and single videos. */
+  var ctx = null, lastYtError = null, lastAdvanceAt = 0;
+  function ctxFor(rec, idx, url){
+    var parts = (rec && rec[5] && rec[5].length > 1) ? rec[5] : null;
+    var i = (typeof idx === 'number') ? idx : -1;
+    if (parts && i < 0 && url){
+      for (var k = 0; k < parts.length; k++){ if (parts[k][1] === url){ i = k; break; } }
+    }
+    return { rec: rec, parts: parts, idx: i, failed: {} };
+  }
+  function nowLabel(){
+    if (ctx && ctx.parts && ctx.idx >= 0)
+      return '\u25b6 Now playing: ' + ctx.rec[0] + ' \u2014 Part ' + ctx.parts[ctx.idx][0];
+    return '\u25b6 Now playing: ' + (ctx && ctx.rec ? ctx.rec[0] : '');
+  }
+  function loadedYtId(){
+    try {
+      var d = ytPlayer && ytPlayer.getVideoData ? ytPlayer.getVideoData() : null;
+      return d && d.video_id ? d.video_id : null;
+    } catch (e) { return null; }
+  }
+  function endState(){
+    wantPlay = false;
+    if (ctx && ctx.rec) now.textContent = '\u25a0 Finished: ' + ctx.rec[0];
+  }
+  function advance(reason, forced){
+    if (!ctx || !ctx.parts){ endState(); return; }
+    /* a late event from the PREVIOUS part must not skip a beat:
+       only the video actually loaded may move the series on, and
+       advances settle one at a time (a chained event re-queues). */
+    var mine = ctx.idx >= 0 ? ytIdOf(ctx.parts[ctx.idx][1]) : null;
+    var loaded = loadedYtId();
+    if (loaded && mine && loaded !== mine) return;
+    if (!forced && Date.now() - lastAdvanceAt < 900){
+      var r = reason;
+      setTimeout(function(){ advance(r, true); }, 950);
+      return;
+    }
+    lastAdvanceAt = Date.now();
+    if (reason === 'error' && ctx.idx >= 0) ctx.failed[ctx.idx] = 1;
+    var nxt = ctx.idx + 1;
+    while (nxt < ctx.parts.length && ctx.failed[nxt]) nxt++;
+    if (nxt >= ctx.parts.length){ endState(); return; }
+    ctx.idx = nxt;
+    play(ctx.parts[nxt][1], ctx.rec[0]);
+  }
+
+  function play(url, title, c){
     if (!url) return;
+    if (c) ctx = c;
     wantPlay = true; lastTouchAt = Date.now();
     player = document.getElementById('player');
     curYtId = ytIdOf(url);
@@ -330,7 +404,7 @@
     }
     player.style.display = 'block'; idle.style.display = 'none';
     document.getElementById('fsBtn').style.display = 'block';
-    now.textContent = '\u25b6 Now playing: ' + title;
+    now.textContent = ctx ? nowLabel() : ('\u25b6 Now playing: ' + title);
     closeCard();
     window.scrollTo(0, 0);
   }
