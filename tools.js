@@ -937,3 +937,15 @@
     return true;
   };
 })();
+
+/* ---- THE BOARD SPEAKS: load the board-voices watcher (boardspeak.js)
+   beside this file. Guarded like every block above; the watcher itself
+   owns its state on window.__vpcBoardSpeak. ---- */
+(function () {
+  'use strict';
+  if (window.__vpcBoardSpeakLoad) return;
+  window.__vpcBoardSpeakLoad = true;
+  var sc = document.createElement('script');
+  sc.src = 'boardspeak.js';
+  document.head.appendChild(sc);
+})();
