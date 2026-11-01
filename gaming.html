@@ -6,7 +6,8 @@
 <title>Cloud Gaming</title>
 <style>
   :root{--bg:#0b0b10;--panel:#14141c;--line:#262633;--ink:#f2f2f7;--mut:#9a9aad;
-        --cyan:#00f0ff;--violet:#b26bff;--gold:#ffb800}
+        --cyan:#00f0ff;--violet:#b26bff;--gold:#ffb800;
+        --gfn:#76b900;--xbox:#52b043;--luna:#b18cff}
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
   body{background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
@@ -16,7 +17,14 @@
   header .logo b{color:var(--violet)}
   header .sub{color:var(--mut);font-size:12px}
 
-  /* THE STAGE — the stream area. A 16:9 picture box contain-fitted into
+  /* search row — one box filters every service's games by name */
+  #searchbar{flex:0 0 auto;display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--line);background:#0e0e15}
+  #q{flex:1 1 auto;min-width:0;background:#17171f;border:1.5px solid var(--line);border-radius:999px;
+     color:var(--ink);font-size:14px;padding:8px 14px;outline:none}
+  #q:focus{border-color:var(--violet)}
+  #qcount{flex:0 0 auto;font-size:12px;color:var(--mut);white-space:nowrap}
+
+  /* THE STAGE — the storefront area. A 16:9 picture box contain-fitted into
      whatever glass this surface lands on (JS fit(): every corner of the
      picture inside the wrap, zero crop, zero stretch, zero bleed). The
      leftover glass is DRESSED, never dead black: ambient neon glow in
@@ -32,17 +40,56 @@
     overflow:hidden;display:flex;flex-direction:column}
   #frame{position:absolute;inset:0;width:100%;height:100%;border:0;display:none;background:#000}
   #board{position:absolute;inset:0;display:flex;flex-direction:column;padding:14px 16px;overflow-y:auto}
-  #verdict{font-size:13.5px;line-height:1.5;color:#d8d8e4;margin-bottom:12px}
+  #verdict{font-size:13.5px;line-height:1.5;color:#d8d8e4;margin-bottom:14px}
   #verdict b{color:var(--ink)}
-  .svc{display:flex;align-items:center;gap:12px;width:100%;text-align:left;margin:5px 0;padding:12px 14px;
-    border-radius:12px;border:1.5px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
-  .svc:active{border-color:var(--violet)}
-  .svc .nm{font-size:17px;font-weight:800;letter-spacing:.3px}
-  .svc .ln{font-size:12.5px;color:var(--mut);line-height:1.4;margin-top:2px}
-  .svc .tag{margin-left:auto;flex:0 0 auto;font-size:10.5px;font-weight:800;letter-spacing:1px;
-    color:var(--gold);border:1.5px solid rgba(255,184,0,.55);border-radius:999px;padding:5px 9px;white-space:nowrap}
-  .svc .go{flex:0 0 auto;font-size:13px;font-weight:900;color:#0a0a12;background:var(--cyan);
-    border-radius:9px;padding:9px 13px;letter-spacing:.5px}
+
+  /* ---- the storefront: one rich section per service ---- */
+  .svcsec{margin-bottom:22px}
+  .svcsec[hidden]{display:none}
+  .hero{position:relative;border-radius:14px;overflow:hidden;cursor:pointer;min-height:104px;
+    display:flex;align-items:flex-end;border:1.5px solid var(--line);background:#101018}
+  .hero:active{border-color:var(--violet)}
+  .heroart{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 30%}
+  .heroshade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(5,6,10,.88) 30%,rgba(5,6,10,.45) 62%,rgba(5,6,10,.12)),
+             linear-gradient(0deg,rgba(5,6,10,.72),transparent 55%)}
+  .svcsec[data-svc="gfn"]  .hero{background:linear-gradient(120deg,#16240a,#0a0f06 70%)}
+  .svcsec[data-svc="xbox"] .hero{background:linear-gradient(120deg,#0d2413,#060f08 70%)}
+  .svcsec[data-svc="luna"] .hero{background:linear-gradient(120deg,#241338,#0d0716 70%)}
+  .herobrand{position:relative;padding:14px 16px;flex:1 1 auto;min-width:0}
+  .wm{font-size:24px;font-weight:900;letter-spacing:.3px;line-height:1.05;text-shadow:0 2px 10px rgba(0,0,0,.7)}
+  .wm .g{color:var(--gfn)} .wm .x{color:var(--xbox)} .wm .l{color:var(--luna)}
+  .tag2{font-size:12px;color:#cfcfe0;margin-top:4px;text-shadow:0 1px 6px rgba(0,0,0,.8)}
+  .signin{position:relative;flex:0 0 auto;margin:14px;font-size:14px;font-weight:900;letter-spacing:.6px;
+    color:#0a0a12;background:var(--cyan);border-radius:10px;padding:11px 16px;white-space:nowrap;
+    box-shadow:0 4px 18px rgba(0,240,255,.35)}
+  .svcline{font-size:12.5px;color:var(--mut);line-height:1.45;margin:9px 2px 10px}
+  .svcline .fv{color:var(--gold);font-weight:800;font-size:10.5px;letter-spacing:1px;
+    border:1.5px solid rgba(255,184,0,.55);border-radius:999px;padding:3px 8px;margin-right:8px;white-space:nowrap}
+
+  /* game grids — each service's art in its own native shape:
+     GFN box art + Xbox posters are portrait; Luna key art is wide */
+  .grid{display:grid;gap:10px}
+  .grid.portrait{grid-template-columns:repeat(auto-fill,minmax(86px,1fr))}
+  .grid.wide{grid-template-columns:repeat(auto-fill,minmax(148px,1fr))}
+  .tile{position:relative;border:1.5px solid var(--line);background:var(--panel);border-radius:10px;
+    overflow:hidden;cursor:pointer;padding:0;text-align:left;color:var(--ink)}
+  .tile:active{border-color:var(--violet)}
+  .tile .art{display:block;width:100%;object-fit:cover;background:#1a1a26}
+  .grid.portrait .tile .art{aspect-ratio:5/7}
+  .grid.wide .tile .art{aspect-ratio:40/21}
+  .tile.noart .art{display:none}
+  .tile .fallback{display:none}
+  .tile.noart .fallback{display:flex;align-items:center;justify-content:center;text-align:center;
+    padding:10px;font-weight:800;font-size:13px;line-height:1.3;color:#d8d8e4;
+    background:linear-gradient(140deg,#23233a,#12121e)}
+  .grid.portrait .tile.noart .fallback{aspect-ratio:5/7}
+  .grid.wide .tile.noart .fallback{aspect-ratio:40/21}
+  .tile .tname{display:block;font-size:11.5px;font-weight:700;line-height:1.3;padding:7px 8px 2px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tile .tstore{display:block;font-size:10px;color:var(--mut);padding:0 8px 7px;letter-spacing:.4px}
+  .src{font-size:10.5px;color:#6d6d80;margin-top:9px;line-height:1.4}
+  #noresults{display:none;font-size:13.5px;color:#d8d8e4;line-height:1.5;padding:8px 2px}
+  #noresults b{color:var(--ink)}
 
   /* slim info strip: service state + honest gamepad state */
   #strip{flex:0 0 auto;display:flex;align-items:center;gap:14px;padding:8px 14px;border-top:1px solid var(--line);
@@ -52,24 +99,30 @@
   #svcState{margin-left:auto;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
   /* stage mode (Projector Fit Law): only the stage, full-frame */
-  body.stage header, body.stage #strip{display:none !important}
+  body.stage header, body.stage #searchbar, body.stage #strip{display:none !important}
   body.stage #stageWrap{flex:1 1 auto}
 </style>
 </head>
 <body>
 <header>
   <div class="logo">CLOUD <b>GAMING</b></div>
-  <div class="sub">the big services, checked against this glass</div>
+  <div class="sub">the storefront — real games, one tap to playing</div>
 </header>
+
+<div id="searchbar">
+  <input id="q" type="search" placeholder="Search games in all three services…" autocomplete="off">
+  <div id="qcount"></div>
+</div>
 
 <div id="stageWrap">
   <div id="stage">
     <div id="board">
       <div id="verdict">Checked against this glass: <b>none of the three majors will play
-        inside another app's screen</b> — each one locks its player. So every pick below
-        <b>opens full view</b>: your game runs there, and your back button brings you
-        straight back to this PC. Nothing here is faked.</div>
-      <div id="cards"></div>
+        inside another app's screen</b> — each one locks its player. So every game here
+        <b>opens full view in its own service — sign in and play</b> — and your back button
+        brings you straight back to this PC. Nothing here is faked.</div>
+      <div id="sections"></div>
+      <div id="noresults"></div>
     </div>
     <iframe id="frame" title="Cloud gaming player"
             allow="gamepad; autoplay; fullscreen; encrypted-media; picture-in-picture; cross-origin-isolated"
@@ -82,12 +135,15 @@
   <div id="svcState">Pick a service above</div>
 </div>
 
+<script src="gaming-catalog.js"></script>
 <script>
 (function(){
   var wrap = document.getElementById('stageWrap'), stage = document.getElementById('stage'),
       frame = document.getElementById('frame'), board = document.getElementById('board'),
-      cards = document.getElementById('cards'), padEl = document.getElementById('pad'),
-      svcState = document.getElementById('svcState');
+      sectionsEl = document.getElementById('sections'), padEl = document.getElementById('pad'),
+      svcState = document.getElementById('svcState'),
+      qEl = document.getElementById('q'), qcount = document.getElementById('qcount'),
+      noresults = document.getElementById('noresults');
 
   /* THE SUPPLY — verified 2026-11-01 against the services' own response
      headers (proofs/v5.2/gaming_headers.txt). A service earns 'inglass'
@@ -100,25 +156,36 @@
      PC uses whenever a thing can't live in the glass. */
   var SERVICES = [
     { id: 'gfn',  name: 'GeForce NOW',       url: 'https://play.geforcenow.com',
-      verdict: 'fullview', line: 'NVIDIA locks its player out of other apps\u2019 screens.' },
+      verdict: 'fullview', line: 'NVIDIA locks its player out of other apps\u2019 screens.',
+      wm: 'GeForce <span class="g">NOW</span>', tag: 'NVIDIA \u00B7 your PC games, streamed from the cloud' },
     { id: 'xbox', name: 'Xbox Cloud Gaming', url: 'https://www.xbox.com/play',
-      verdict: 'fullview', line: 'Microsoft locks its player out of other apps\u2019 screens.' },
+      verdict: 'fullview', line: 'Microsoft locks its player out of other apps\u2019 screens.',
+      wm: 'Xbox <span class="x">Cloud Gaming</span>', tag: 'Microsoft \u00B7 the Game Pass Ultimate cloud library' },
     { id: 'luna', name: 'Amazon Luna',       url: 'https://luna.amazon.com',
-      verdict: 'fullview', line: 'Amazon only lets Luna play on Luna\u2019s own page.' }
+      verdict: 'fullview', line: 'Amazon only lets Luna play on Luna\u2019s own page.',
+      wm: 'Amazon <span class="l">Luna</span>', tag: 'Amazon \u00B7 Luna+ and channel favorites, streamed' }
   ];
 
   /* ---- the full-view trip: this view goes top-level to the service;
      Back returns to the room untouched (the D14 pattern). A record of
-     the trip is left on the top frame first, so it is provable. ---- */
-  function trip(svc){
-    svcState.textContent = 'Opening ' + svc.name + ' full view\u2026';
+     the trip is left on the top frame first, so it is provable. Rides
+     tools.js' generalized __vpcUrlTrip when the room provides it,
+     exactly like the browser's door; standalone it navigates top. ---- */
+  function tripTo(svc, url, label){
+    svcState.textContent = 'Opening ' + label + ' full view\u2026';
     try { window.top.__vpcGamingTrip = svc.id; } catch (e) {}
     try {
       window.top.localStorage.setItem('vpc_gaming_return',
         JSON.stringify({ svc: svc.id, t: Date.now() }));
     } catch (e) {}
-    window.top.location.href = svc.url;
+    try {
+      if (window.top && typeof window.top.__vpcUrlTrip === 'function') {
+        window.top.__vpcUrlTrip(url); return;
+      }
+    } catch (e) {}
+    window.top.location.href = url;
   }
+  function trip(svc){ tripTo(svc, svc.url, svc.name); }
 
   /* an in-glass player, for the day a service passes verification:
      it would live in #frame, inside the contain-fitted stage */
@@ -129,24 +196,112 @@
     svcState.textContent = svc.name + ' — playing on this screen';
   }
 
+  /* ---- THE STOREFRONT — real games from gaming-catalog.js, baked at
+     build time from each service's own public catalog (source + snapshot
+     date printed under every grid — honesty is the house style). Art is
+     the services' own CDN art, build-verified; a tile whose art ever
+     fails swaps to a styled title tile — never a broken-image icon. ---- */
+  var CAT = (window.__VPC_GAMING_CATALOG && window.__VPC_GAMING_CATALOG.services) || {};
+  var SNAPSHOT = (window.__VPC_GAMING_CATALOG && window.__VPC_GAMING_CATALOG.snapshot) || '';
+  var tileCount = {}, tileEls = {};
+
+  function norm(s){ return String(s || '').toLowerCase().replace(/[\u00AE\u2122\u00A9]/g, ''); }
+
   SERVICES.forEach(function(svc){
-    var b = document.createElement('button');
-    b.className = 'svc'; b.dataset.svc = svc.id;
-    var tx = document.createElement('span');
-    var nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = svc.name;
-    var ln = document.createElement('div'); ln.className = 'ln'; ln.textContent = svc.line;
-    tx.appendChild(nm); tx.appendChild(ln);
-    b.appendChild(tx);
-    var tag = document.createElement('span'); tag.className = 'tag';
-    tag.textContent = svc.verdict === 'inglass' ? 'PLAYS INSIDE' : 'OPENS FULL VIEW';
-    b.appendChild(tag);
-    var go = document.createElement('span'); go.className = 'go'; go.textContent = 'OPEN \u2192';
-    b.appendChild(go);
-    b.onclick = function(){ if (svc.verdict === 'inglass') playInGlass(svc); else trip(svc); };
-    cards.appendChild(b);
+    var data = CAT[svc.id] || { games: [] };
+    var games = data.games || [];
+    tileCount[svc.id] = games.length; tileEls[svc.id] = [];
+
+    var sec = document.createElement('section');
+    sec.className = 'svcsec'; sec.dataset.svc = svc.id;
+
+    var hero = document.createElement('div');
+    hero.className = 'hero'; hero.dataset.signin = svc.id;
+    if (data.hero) {
+      var him = document.createElement('img');
+      him.className = 'heroart'; him.src = data.hero; him.alt = ''; him.loading = 'lazy';
+      him.onerror = function(){ him.remove(); };
+      hero.appendChild(him);
+    }
+    var shade = document.createElement('div'); shade.className = 'heroshade'; hero.appendChild(shade);
+    var brand = document.createElement('div'); brand.className = 'herobrand';
+    var wm = document.createElement('div'); wm.className = 'wm'; wm.innerHTML = svc.wm;
+    var tg = document.createElement('div'); tg.className = 'tag2'; tg.textContent = svc.tag;
+    brand.appendChild(wm); brand.appendChild(tg); hero.appendChild(brand);
+    var si = document.createElement('span'); si.className = 'signin'; si.textContent = 'SIGN IN \u2192';
+    hero.appendChild(si);
+    hero.onclick = function(){ if (svc.verdict === 'inglass') playInGlass(svc); else trip(svc); };
+    sec.appendChild(hero);
+
+    var ln = document.createElement('div'); ln.className = 'svcline';
+    var fv = document.createElement('span'); fv.className = 'fv'; fv.textContent = 'OPENS FULL VIEW';
+    ln.appendChild(fv); ln.appendChild(document.createTextNode(svc.line));
+    sec.appendChild(ln);
+
+    var grid = document.createElement('div');
+    grid.className = 'grid ' + (svc.id === 'luna' ? 'wide' : 'portrait');
+    games.forEach(function(g){
+      var t = document.createElement('button');
+      t.className = 'tile'; t.dataset.title = norm(g.t);
+      var im = document.createElement('img');
+      im.className = 'art'; im.src = g.art; im.alt = g.t; im.loading = 'lazy'; im.decoding = 'async';
+      im.onerror = function(){ t.classList.add('noart'); im.remove(); };
+      t.appendChild(im);
+      var fb = document.createElement('span'); fb.className = 'fallback'; fb.textContent = g.t;
+      t.appendChild(fb);
+      var nm = document.createElement('span'); nm.className = 'tname'; nm.textContent = g.t;
+      t.appendChild(nm);
+      if (g.store && String(g.store).toUpperCase() !== 'UNKNOWN') {
+        var st = document.createElement('span'); st.className = 'tstore';
+        st.textContent = 'on ' + g.store; t.appendChild(st);
+      }
+      /* a tile with its own real page (Xbox titles, Luna titles) rides
+         straight to that game's page in the service; GeForce NOW tiles
+         ride to the service's sign-in/play home */
+      t.onclick = function(){ tripTo(svc, g.url || svc.url, g.t + ' in ' + svc.name); };
+      grid.appendChild(t);
+      tileEls[svc.id].push(t);
+    });
+    sec.appendChild(grid);
+
+    var src = document.createElement('div'); src.className = 'src';
+    src.textContent = games.length + ' games shown \u00B7 ' + (data.source || '') +
+      (SNAPSHOT ? ' \u00B7 snapshot ' + SNAPSHOT : '') + ' \u00B7 art is the service\u2019s own';
+    sec.appendChild(src);
+
+    sectionsEl.appendChild(sec);
+    svc._sec = sec;
   });
 
-  /* ---- FIT: the stage is the stream area — contain-fit 16:9 inside
+  /* ---- search: one box filters every service's games by name ---- */
+  function totalGames(){
+    var n = 0; for (var k in tileCount) n += tileCount[k]; return n;
+  }
+  function applySearch(){
+    var q = norm(qEl.value).trim(), visible = {}, total = 0;
+    SERVICES.forEach(function(svc){
+      var n = 0;
+      tileEls[svc.id].forEach(function(t){
+        var show = !q || t.dataset.title.indexOf(q) >= 0;
+        t.style.display = show ? '' : 'none';
+        if (show) n++;
+      });
+      visible[svc.id] = n; total += n;
+      svc._sec.hidden = n === 0;
+    });
+    qcount.textContent = q ? (total + ' match' + (total === 1 ? '' : 'es'))
+                           : (totalGames() + ' games');
+    if (q && total === 0) {
+      noresults.innerHTML = 'No games match <b></b> — clear the search to see the whole storefront.';
+      noresults.querySelector('b').textContent = '\u201C' + qEl.value.trim() + '\u201D';
+      noresults.style.display = 'block';
+    } else noresults.style.display = 'none';
+    return visible;
+  }
+  qEl.addEventListener('input', applySearch);
+  applySearch();
+
+  /* ---- FIT: the stage is the storefront area — contain-fit 16:9 inside
      the wrap at every glass shape; corners measured, never cropped. */
   function fit(){
     var W = wrap.clientWidth, H = wrap.clientHeight;
@@ -191,14 +346,23 @@
     var wr = wrap.getBoundingClientRect(), sr = stage.getBoundingClientRect();
     var inside = sr.left >= wr.left - 1 && sr.top >= wr.top - 1 &&
                  sr.right <= wr.right + 1 && sr.bottom <= wr.bottom + 1;
+    var visible = {}, i;
+    SERVICES.forEach(function(svc){
+      var n = 0;
+      tileEls[svc.id].forEach(function(t){ if (t.style.display !== 'none') n++; });
+      visible[svc.id] = n;
+    });
     return {
-      services: SERVICES.map(function(s){ return { id: s.id, verdict: s.verdict }; }),
+      services: SERVICES.map(function(s){ return { id: s.id, verdict: s.verdict,
+        games: tileCount[s.id], visible: visible[s.id] }; }),
       stage: { w: Math.round(sr.width), h: Math.round(sr.height) },
       wrap: { w: Math.round(wr.width), h: Math.round(wr.height) },
       contained: inside,
       aspect: sr.height ? +(sr.width / sr.height).toFixed(3) : 0,
       pad: padEl.textContent,
-      inGlass: frame.style.display === 'block'
+      inGlass: frame.style.display === 'block',
+      query: qEl.value,
+      totalGames: totalGames()
     };
   };
 
