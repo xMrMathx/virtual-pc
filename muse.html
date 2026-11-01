@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Meta Muse — Screen 8</title>
+<title>ALLON — Live Talk · Screen 8</title>
 <style>
   :root{--bg:#06060a;--panel:#12121c;--line:#26263a;--ink:#f2f2f7;--mut:#9a9aad;--gold:#ffb800;--cyan:#00f0ff}
   *{box-sizing:border-box;margin:0;padding:0}
@@ -20,7 +20,8 @@
   #ring::before{content:'';position:absolute;inset:0;border-radius:50%;
         border:2.5px solid rgba(255,184,0,.35)}
   #ring::after{content:'';position:absolute;inset:0;border-radius:50%;pointer-events:none}
-  #face{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;background:#1a1a26}
+  #face{width:100%;height:100%;border-radius:50%;object-fit:contain;padding:4.5%;display:block;
+        background:radial-gradient(circle at 50% 42%, #141422 0%, #0a0a12 78%)}
   /* idle: quiet gold halo */
   #presence[data-state="idle"] #ring{box-shadow:0 0 34px rgba(255,184,0,.22)}
   /* listening: cyan breathe */
@@ -59,23 +60,22 @@
          border-radius:13px;padding:10px 14px;font-size:3.8vmin;line-height:1.45;color:#fff3d6}
   #reply .who{color:var(--gold);font-weight:800;font-size:2.9vmin;letter-spacing:1px;display:block;margin-bottom:2px}
 
-  /* ---- session controls ---- */
-  #session{display:flex;gap:9px;padding:10px 12px 2px;flex:0 0 auto;justify-content:center}
-  .sbtn{height:52px;padding:0 20px;border-radius:999px;border:1.5px solid var(--line);background:var(--panel);
-        color:var(--ink);font-weight:900;font-size:15px;letter-spacing:.6px;cursor:pointer}
+  /* ---- the one control: the call button ---- */
+  #session{display:flex;padding:12px 12px 4px;flex:0 0 auto;justify-content:center}
+  .sbtn{border-radius:999px;border:1.5px solid var(--line);background:var(--panel);
+        color:var(--ink);font-weight:900;letter-spacing:.6px;cursor:pointer}
   .sbtn:active{transform:scale(.97)}
-  #talkBtn{border-color:rgba(0,240,255,.6);color:#aef4ff}
-  #liveBtn{background:var(--gold);border-color:var(--gold);color:#191002}
-  #liveBtn.on{background:#ff5340;border-color:#ff5340;color:#fff}
-  #endBtn{display:none;border-color:rgba(255,83,64,.7);color:#ff9aa8}
-  #endBtn.show{display:block}
+  /* LIVE TALK starts the call; while the call runs this same button
+     is the HANG UP. Nothing else competes with it. */
+  #liveBtn{height:66px;min-width:min(320px,86%);padding:0 36px;background:var(--gold);border-color:var(--gold);
+        color:#191002;font-size:19px;box-shadow:0 8px 30px rgba(255,184,0,.28)}
+  #liveBtn.on{background:#ff5340;border-color:#ff5340;color:#fff;box-shadow:0 8px 30px rgba(255,83,64,.3)}
 
-  #chips{display:flex;gap:8px;padding:8px 12px 2px;flex:0 0 auto;flex-wrap:wrap;justify-content:center}
-  .chip{height:36px;padding:0 13px;border-radius:999px;border:1.5px solid var(--line);background:var(--panel);
-        color:var(--ink);font-size:13.5px;font-weight:600;cursor:pointer}
-  #bar{display:flex;gap:8px;padding:10px 12px 12px;flex:0 0 auto}
-  #cmd{flex:1;height:50px;border-radius:12px;border:1.5px solid var(--line);background:var(--panel);
-       color:var(--ink);font-size:16px;padding:0 14px;outline:none;min-width:40px}
+  /* the typed line: a quiet fallback for when the ear is down —
+     visually minor by design */
+  #bar{display:flex;gap:8px;padding:8px 12px 12px;flex:0 0 auto;align-items:center}
+  #cmd{flex:1;height:40px;border-radius:10px;border:1.5px solid var(--line);background:rgba(18,18,28,.6);
+       color:var(--ink);font-size:14px;padding:0 12px;outline:none;min-width:40px}
   #cmd:focus{border-color:var(--gold)}
   /* short glass (the mount is squarish): shrink the presence so the whole
      conversation fits above the controls — nothing ever paints over them */
@@ -85,34 +85,27 @@
     #status{margin-top:1.4vmin}
     #thread{margin-top:1vmin}
   }
-  #send{height:50px;padding:0 20px;border-radius:12px;border:0;background:var(--gold);color:#191002;
-        font-weight:900;font-size:15px;cursor:pointer;flex:0 0 auto}
+  #send{height:40px;padding:0 16px;border-radius:10px;border:1.5px solid var(--line);background:var(--panel);
+        color:var(--mut);font-weight:800;font-size:13px;cursor:pointer;flex:0 0 auto}
 </style>
 </head>
 <body>
 <div id="stage">
   <div id="presence" data-state="idle">
-    <div id="ring"><img id="face" src="babyboo-portrait.png" alt="Babyboo"></div>
-    <div id="pill">Babyboo</div>
+    <div id="ring"><img id="face" src="allon-bust.png" alt="ALLON"></div>
+    <div id="pill">ALLON</div>
   </div>
-  <div id="status">Your assistant, on Screen 8. <b>Tap to talk</b> — or go <span class="gold">LIVE</span> and just talk.</div>
+  <div id="status">ALLON runs this PC. <b>Tap LIVE TALK</b> — and just talk.</div>
   <div id="thread">
     <div id="heard" style="display:none"><span class="who">YOU</span><span id="heardTx"></span></div>
-    <div id="reply" style="display:none"><span class="who">BABYBOO</span><span id="replyTx"></span></div>
+    <div id="reply" style="display:none"><span class="who">ALLON</span><span id="replyTx"></span></div>
   </div>
 </div>
 <div id="session">
-  <button class="sbtn" id="talkBtn">🎙 TALK</button>
   <button class="sbtn" id="liveBtn">● LIVE TALK</button>
-  <button class="sbtn" id="endBtn">■ END</button>
-</div>
-<div id="chips">
-  <button class="chip" data-cmd="how many titles do we have">How many titles?</button>
-  <button class="chip" data-cmd="who is on shift">Who's on shift?</button>
-  <button class="chip" data-cmd="turn off screen eight">Sleep this screen</button>
 </div>
 <div id="bar">
-  <input id="cmd" type="text" placeholder="Talk to Muse…" autocomplete="off">
+  <input id="cmd" type="text" placeholder="or type…" autocomplete="off">
   <button id="send">SEND</button>
 </div>
 
@@ -120,35 +113,41 @@
 (function(){
   'use strict';
   /* ============================================================
-     Muse talk — Feature 34. The conversation lives on this glass.
+     ALLON — Live Talk. Screen 8's resident is the PC's ONE AI:
+     ALLON himself (his consolidation ruling, 2026-11-01). This
+     screen is a CALL, nothing else: tap LIVE TALK, he greets you
+     first, you talk, he answers out loud and runs the whole PC,
+     and HANG UP ends the call. No second mode, no chips.
      EVERY utterance (voice or typed) goes to the PC's real command
-     layer through the same channel the typed bar has always used
-     (window.top.__vpcMuseCmd -> the engine's _route_command, the
-     exact executor Jarvis voice uses — screen swaps, mounts,
-     projector, power, LED, and the state/knowledge Q&A). Replies
+     layer through the same channel the typed line has always used
+     (window.top.__vpcMuseCmd -> the engine's _route_command + the
+     intent layer — screen swaps, mounts, projector, power, LED,
+     splits, tools, and the state/knowledge Q&A, incl. the office:
+     who's on shift, today's projects, what's going on). Replies
      come back on window.top.__vpcMuseReply and are printed AND
      spoken here. There is no second router in this page; the one
      extra channel used is the system's own zoom request global
      (__vpcZoomReq), and only for "zoom <app>" orders the command
      layer itself declines.
-     Voice in/out backends, in order: the APK native speech bridge
-     (window.AllonShell.startListening/speak — page side implemented
-     here; results arrive on window.top.__vpcMuseNativeSay), then
-     the web SpeechRecognition/speechSynthesis pair. If a backend
-     is missing the glass SAYS so — a talk button never sits dead.
+     The ear is the APK's native speech bridge — tap-to-talk, NOT
+     the wake-word spotter (window.AllonShell.startListening/speak;
+     results arrive on window.top.__vpcMuseNativeSay), with the
+     web SpeechRecognition/speechSynthesis pair behind it. If no
+     ear can open, the glass SAYS so in plain words and the typed
+     line takes the order — the button never sits dead.
      ============================================================ */
   var $ = function(id){ return document.getElementById(id); };
   var presence = $('presence'), statusEl = $('status'), thread = $('thread'),
       heardBox = $('heard'), heardTx = $('heardTx'),
       replyBox = $('reply'), replyTx = $('replyTx'),
-      talkBtn = $('talkBtn'), liveBtn = $('liveBtn'), endBtn = $('endBtn'),
+      liveBtn = $('liveBtn'),
       cmd = $('cmd');
 
   var V = {
     srCtor: !!(window.SpeechRecognition || window.webkitSpeechRecognition),
     tts: !!window.speechSynthesis,
     bridge: 'none',           // 'full' | 'listapps-only' | 'none'
-    mode: 'off',              // 'off' | 'talk' | 'live'
+    mode: 'off',              // 'off' | 'live' — the call is the only mode
     state: 'idle',            // idle|listening|hearing|thinking|speaking|unavailable
     backend: 'none',          // 'native' | 'web' | 'none'
     lastError: '',
@@ -289,7 +288,7 @@
     V.turns[V.turns.length - 1] && (V.turns[V.turns.length - 1].reply = text);
     showReply(text);
     if (V.mode === 'off'){ setState('idle'); return; }
-    if (text.indexOf("DIDN'T CATCH") === 0){
+    if (text.toLowerCase().indexOf("didn't catch") === 0){
       var z = zoomFallback(V.turns[V.turns.length - 1].you || '');
       if (z){
         showReply(z);
@@ -300,8 +299,7 @@
     speak(text, afterTurn);
   }
   function afterTurn(){
-    if (V.mode === 'live'){ setState('listening', '<b>Listening…</b> just talk — or tap END'); ensureListening(); }
-    else if (V.mode === 'talk'){ setState('idle', '<b>Tap TALK</b> to say the next thing — or END'); }
+    if (V.mode === 'live'){ setState('listening', '<b>Listening…</b> just talk — or tap HANG UP'); ensureListening(); }
   }
   /* the engine answers on the top page; consume new replies.
      Snapshot whatever is there at load so a stale answer from
@@ -311,6 +309,7 @@
     var r = topGet('__vpcMuseReply') || '';
     if (r && r !== lastReplySeen){
       lastReplySeen = r;
+      if (briefingCb){ var bf = briefingCb; briefingCb = null; bf(r); return; }
       if (awaiting) onReply(r);
       else if (V.mode !== 'off') onReply(r);
       else { showReply(r); }
@@ -323,7 +322,7 @@
     var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) return null;
     var r = new SR();
-    r.continuous = (V.mode === 'live');
+    r.continuous = true;   /* the call: always listening while it runs */
     r.interimResults = true;
     r.lang = 'en-US';
     r.onresult = function(e){
@@ -341,7 +340,7 @@
       if (n === 'not-allowed' || n === 'service-not-allowed'){
         voiceUnavailable('Mic blocked — allow the microphone for this app, or type below and I\'ll still answer.');
       } else if (n === 'network'){
-        setState('unavailable', 'Speech service unreachable right now — type below, or try TALK again in a moment.');
+        setState('unavailable', 'Speech service unreachable right now — type below, or try LIVE TALK again in a moment.');
         log('sr:network — recognition service unreachable in this shell');
       } else if (n === 'audio-capture'){
         voiceUnavailable('No microphone found on this device — type below and I\'ll still answer.');
@@ -441,35 +440,41 @@
     var parts = String(text || '').split(':');
     var word = parts[0] || '', code = parts[1] || '';
     switch (word){
+      case 'not-allowed-permanent':
+        return 'Android won\'t ask again — turn the mic on here: Settings → Apps → Virtual PC → Permissions → Microphone → Allow, then tap LIVE TALK.';
       case 'not-allowed':
-        return 'Microphone permission is off — allow the mic when Android asks, then tap TALK or LIVE TALK again. Typing works below, and I\'ll still answer.';
+        return 'Microphone permission is off — allow the mic when Android asks, then tap LIVE TALK again. Typing works below, and I\'ll still answer.';
       case 'recognizer-busy':
-        return 'The speech service is busy right now — give it a breath and tap TALK again, or type below.';
+        return 'The speech service is busy right now — give it a breath and tap LIVE TALK again, or type below.';
       case 'no-match':
-        return 'I didn\'t catch any words that time — tap TALK and say it again, or type below.';
+        return 'I didn\'t catch any words that time — tap LIVE TALK and say it again, or type below.';
       case 'network': case 'network-timeout':
         return 'The speech service couldn\'t be reached just now — check the connection, or type below and I\'ll still answer.';
       case 'audio':
-        return 'The microphone hit a problem — make sure nothing else is using it, then tap TALK again. Typing works below.';
+        return 'The microphone hit a problem — make sure nothing else is using it, then tap LIVE TALK again. Typing works below.';
       case 'server':
-        return 'The phone\'s speech service answered with an error — type below and I\'ll still answer, or try TALK again in a moment.';
+        return 'The phone\'s speech service answered with an error — type below and I\'ll still answer, or try LIVE TALK again in a moment.';
       case 'client':
         return 'My speech ear tripped over itself — tap LIVE TALK to start it fresh, or type below.';
       case 'unavailable': case 'no-recognizer':
         return 'No speech service on this phone answered — typing works below, and I\'ll still answer.';
       case 'speech-timeout':
-        return 'I only heard silence that time — tap TALK when you\'re ready, or type below.';
+        return 'I only heard silence that time — tap LIVE TALK when you\'re ready, or type below.';
       default:
         return 'My speech ear hit a problem I don\'t have a name for (error ' + (code || '?') + ') — type below and I\'ll still answer.';
     }
   }
 
-  /* ---------------- sessions ---------------- */
+  /* ---------------- the call ----------------
+     One session shape only: the live call. Tap LIVE TALK -> he
+     speaks FIRST -> the ear opens -> continuous back-and-forth
+     (barge-in included) until HANG UP or a spoken sign-off. */
   var GREETINGS = [
-    "Hey — I'm here. Talk to me.",
-    "I'm listening — what's up?",
-    'Hey Mr. Moore — what do you need?',
-    'Live and listening — go ahead.'
+    'ALLON here — what do you need?',
+    'ALLON, online — go ahead.',
+    'Listening — what\'s the order?',
+    'ALLON here, Mr. Moore — what do you need?',
+    'At your service, sir — what\u2019s the order?'
   ];
   function pickBackend(){
     V.bridge = bridgeKind();
@@ -481,74 +486,88 @@
   function voiceUnavailable(msg){
     haltListening();
     V.mode = 'off';
-    talkBtn.textContent = '🎙 TALK'; liveBtn.textContent = '● LIVE TALK'; liveBtn.classList.remove('on');
-    endBtn.classList.remove('show');
+    liveBtn.textContent = '● LIVE TALK'; liveBtn.classList.remove('on');
     setState('unavailable', msg);
     log('voice unavailable: ' + msg);
   }
-  function startSession(mode){
-    if (V.mode === mode){ return; }
+  /* Call-start briefing: a silent state query on the SAME command
+     channel (never a user turn). The engine answers from real room +
+     office state; the page speaks it between greeting and ear-open. */
+  var briefingCb = null;
+  function requestBriefing(cb){
+    briefingCb = cb;
+    lastReplySeen = '';
+    topSet('__vpcMuseReply', '');
+    topSet('__vpcMuseCmd', '__briefing__');
+    setTimeout(function(){
+      if (briefingCb){ var f = briefingCb; briefingCb = null; f(''); }
+    }, 4000);
+  }
+  function startCall(){
+    if (V.mode === 'live'){ return; }
     endSession(false);
     if (!pickBackend()){
       voiceUnavailable('Voice isn\'t available in this shell — no speech recognition here. ' +
         'Type below and I\'ll still answer and run your orders. (In the app, this needs the native speech bridge.)');
       return;
     }
-    V.mode = mode;
-    endBtn.classList.add('show');
-    liveBtn.classList.toggle('on', mode === 'live');
-    liveBtn.textContent = mode === 'live' ? '● LIVE — ON' : '● LIVE TALK';
-    log('session start: ' + mode + ' via ' + V.backend);
-    if (mode === 'live'){
-      var g = GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
-      showReply(g);
-      V.turns.push({ muse: g, greeting: true });
-      /* Muse speaks FIRST — then the floor is his. (If no voice-out
-         backend exists, speak() itself schedules the hand-off.) */
-      speak(g, function(){
-        if (V.mode === 'live'){ setState('listening', '<b>Listening…</b> just talk — or tap END'); ensureListening(); }
+    V.mode = 'live';
+    liveBtn.classList.add('on');
+    liveBtn.textContent = '■ HANG UP';
+    log('call start: live via ' + V.backend);
+    var g = GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
+    showReply(g);
+    V.turns.push({ muse: g, greeting: true });
+    /* ALLON speaks FIRST — then the floor is his. (If no voice-out
+       backend exists, speak() itself schedules the hand-off.) */
+    speak(g, function(){
+      if (V.mode !== 'live') return;
+      /* Canonical ALLON move: greeting first, then ONE breath of
+         state-of-the-union from real state, then the ear opens. */
+      requestBriefing(function(b){
+        if (V.mode !== 'live') return;
+        if (b && b.indexOf('FINISH THE TUTORIAL') !== 0 && b.toLowerCase().indexOf("didn't catch") !== 0){
+          showReply(b);
+          V.turns.push({ muse: b, briefing: true });
+          speak(b, function(){
+            if (V.mode === 'live'){ setState('listening', '<b>Listening…</b> just talk — or tap HANG UP'); ensureListening(); }
+          });
+        } else {
+          setState('listening', '<b>Listening…</b> just talk — or tap HANG UP'); ensureListening();
+        }
       });
-    } else {
-      setState('listening', '<b>Listening…</b> say it');
-      ensureListening();
-    }
+    });
   }
   function endSession(signoff){
     var was = V.mode;
     haltListening();
     stopSpeaking('end');
     V.mode = 'off';
-    talkBtn.textContent = '🎙 TALK'; liveBtn.textContent = '● LIVE TALK'; liveBtn.classList.remove('on');
-    endBtn.classList.remove('show');
-    if (was !== 'off') log('session end');
+    liveBtn.textContent = '● LIVE TALK'; liveBtn.classList.remove('on');
+    if (was !== 'off') log('call end');
     if (signoff && was !== 'off'){
-      var bye = "Okay — tap me when you need me.";
+      var bye = "Okay — I'll be here. Tap LIVE TALK when you need me.";
       showReply(bye);
       speak(bye, null);   /* speak() no-ops gracefully with no voice-out */
-      setState('idle', 'Session ended. <b>Tap to talk</b> — or go <span class="gold">LIVE</span>.');
+      setState('idle', 'Call ended. <b>Tap LIVE TALK</b> when you need me.');
     } else if (was !== 'off'){
-      setState('idle', 'Session ended. <b>Tap to talk</b> — or go <span class="gold">LIVE</span>.');
+      setState('idle', 'Call ended. <b>Tap LIVE TALK</b> when you need me.');
     }
   }
-  talkBtn.onclick = function(){
-    if (V.mode === 'talk'){ ensureListening(); setState('listening', '<b>Listening…</b> say it'); }
-    else startSession('talk');
-  };
   liveBtn.onclick = function(){
-    if (V.mode === 'live') endSession(false);
-    else startSession('live');
+    if (V.mode === 'live') endSession(false);   /* the button IS the hang-up while the call runs */
+    else startCall();
   };
-  endBtn.onclick = function(){ endSession(false); };
   presence.addEventListener('click', function(){
     if (V.state === 'speaking' && V.mode === 'live'){
       log('barge-in: portrait tap');
       stopSpeaking('tap');
-      setState('listening', '<b>Listening…</b> just talk — or tap END');
+      setState('listening', '<b>Listening…</b> just talk — or tap HANG UP');
       ensureListening();
     }
   });
 
-  /* ---------------- typed bar + chips (unchanged channel) ---------------- */
+  /* ---------------- typed line (the quiet fallback — same channel) ---------------- */
   function sendTyped(text){
     text = (text || '').trim();
     if (!text) return;
@@ -558,9 +577,6 @@
   }
   $('send').onclick = function(){ sendTyped(cmd.value); };
   cmd.addEventListener('keydown', function(e){ if (e.key === 'Enter') sendTyped(cmd.value); });
-  document.querySelectorAll('.chip').forEach(function(c){
-    c.onclick = function(){ sendTyped(c.dataset.cmd); };
-  });
 
   /* ---------------- state + test seams ----------------
      The seams drive the SAME handlers the recognizer drives, so a
@@ -569,7 +585,7 @@
     return { reply: replyTx.textContent || '', heard: heardTx.textContent || '',
              mode: V.mode, state: V.state, backend: V.backend, turns: V.turns.length };
   };
-  window.__vpcMuseTestStart = function(mode){ startSession(mode === 'live' ? 'live' : 'talk'); };
+  window.__vpcMuseTestStart = function(){ startCall(); };
   window.__vpcMuseTestSay = function(text){ onFinalTranscript(text, 'test'); };
   window.__vpcMuseTestInterim = function(text){ onInterim(text); };
   window.__vpcMuseTestEnd = function(){ endSession(false); };
