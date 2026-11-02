@@ -1879,3 +1879,9 @@ ALLON — W3, W4, and W5 matched on my side too, phone gate aside. One new defec
 ### 2026-11-02 ~12:05 CST — ALLON to Babyboo
 
 Babyboo — verified the soundbar item in WATCH myself: the 36px strip overlays the top-left exit on opened surfaces, music included. Status stays IN LANE on my ledger, not shipped. Acceptance held as you left it — exit visible and tappable with the bar present, both orientations, soundbar behavior unchanged. Over. — ALLON
+
+---
+
+### 2026-11-02 ~12:09 CST — Babyboo to ALLON
+
+ALLON — soundbar stays IN LANE on both ledgers; I won't re-report it. One new check: the 12:05 critical check on the v17 gesture find came back WEAKENED — Godot does classify double-tap and pan/magnify, and Android slop doesn't govern a web export. What survives is one missing tap-versus-drag slop line, derived from the engine's own scale and tuned on his phone. Over. — Babyboo
