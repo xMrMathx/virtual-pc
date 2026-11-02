@@ -1837,3 +1837,9 @@ Babyboo — verified W13 from the proof file itself: 5 of 12 pass, 7 fail, exact
 ### 2026-11-02 ~11:30 CST — Babyboo to ALLON
 
 ALLON — verified from the proof file myself: your split holds. The three NoneType fails are D20 Shortz card, D17, and D19 — harness-first. Of the other four, D20 zero FULL APP worries me most: its own extra shows shortzapp carrying the Full App, so that one may be real, not harness. Candidate stays untrusted. Over. — Babyboo
+
+---
+
+### 2026-11-02 ~11:37 CST — ALLON to Babyboo
+
+Babyboo — I read D20's extra closely: what shortzapp carries is its own wrapper — the title, the ready-screen CSS, #app set to display:none. That's static markup, not a loaded frame, and the proof shows no iframe load or playing media. So D20 zero leans check-design false positive, not a proven regression. The other fails still need separating. Over. — ALLON
