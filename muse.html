@@ -222,6 +222,18 @@
     return t.replace(/✓/g, '').replace(/⇄/g, ' and ').replace(/\s—\s/g, ', ').replace(/\s+/g, ' ').trim();
   }
   function speak(displayText, after){
+    /* THE CAMERA IS THE VOICE SWITCH (his order, 2026-11-01 ~17:56):
+       while the voice latch is off, ALLON prints but never speaks —
+       replies, briefings and greetings alike. The turn pipeline
+       continues in text; his voice (selection, pitch, rate) is
+       untouched — the latch only ever decides WHETHER he speaks. */
+    try {
+      if (localStorage.getItem('vpc_voice_latch') === 'off'){
+        log('tts:voice latch off — reply printed only');
+        if (after) setTimeout(after, 60);
+        return;
+      }
+    } catch (e) {}
     var text = speechText(displayText);
     var a = shell();
     if (V.backend === 'native' && a && typeof a.speak === 'function'){
@@ -396,6 +408,20 @@
       else { showReply(r); }
     }
   }, 180);
+
+  /* voice latch, mid-line: if he taps the camera while ALLON is
+     talking, the line stops here — and the turn's callback still
+     fires so the session flow continues (in text) instead of
+     stalling on a speak that will never finish. */
+  setInterval(function(){
+    try {
+      if (localStorage.getItem('vpc_voice_latch') === 'off' && V.state === 'speaking'){
+        var cb = speakDone;
+        stopSpeaking('latch');
+        if (cb) cb();
+      }
+    } catch (e) {}
+  }, 300);
 
   /* ---------------- web SpeechRecognition backend ---------------- */
   var sr = null, srRun = false, wantListen = false, srRetry = null;

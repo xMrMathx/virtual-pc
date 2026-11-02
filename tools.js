@@ -478,10 +478,28 @@
     window.__vpcCamOpen = '';
   }
   window.__vpcCloseCam = closeCam;
+  /* ---- THE CAMERA IS THE VOICE SWITCH (his order, 2026-11-01 ~17:56
+     CST): tapping the webcam prop atop the middle top screen flips a
+     MASTER VOICE LATCH for the agents — 'off' silences ALLON and
+     Babyboo (board speech, talk replies, greetings); tapping the
+     camera AGAIN flips it back 'on'. Closing the view (the 'close'
+     pop, or the view's own ✕) NEVER toggles it. The latch persists
+     (localStorage 'vpc_voice_latch'), so a room he silenced boots
+     silenced. boardspeak.js enforces it for the board; muse.html for
+     ALLON's talk speech. His own mic is never gated — only the
+     agents' mouths. ---- */
+  try { window.__vpcVoiceLatch = (localStorage.getItem('vpc_voice_latch') === 'off') ? 'off' : 'on'; } catch (e) { window.__vpcVoiceLatch = 'on'; }
+  function flipVoiceLatch() {
+    var off = true;
+    try { off = localStorage.getItem('vpc_voice_latch') !== 'off'; } catch (e) {}
+    try { localStorage.setItem('vpc_voice_latch', off ? 'off' : 'on'); } catch (e) {}
+    window.__vpcVoiceLatch = off ? 'off' : 'on';
+    try { if (window.__vpcBoardSpeak && window.__vpcBoardSpeak._latch) window.__vpcBoardSpeak._latch(off); } catch (e) {}
+  }
   setInterval(function () {
     var f = '';
     try { f = window.__vpcCameraPop || ''; } catch (e) { f = ''; }
-    if (f === 'open') { window.__vpcCameraPop = ''; openCam(); }
+    if (f === 'open') { window.__vpcCameraPop = ''; flipVoiceLatch(); openCam(); }
     else if (f === 'close') { window.__vpcCameraPop = ''; closeCam(); }
   }, 250);
 })();
