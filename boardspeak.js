@@ -84,7 +84,26 @@
      speech is available from the moment the app opens. On the pure
      web fallback, the first tap/key anywhere in the room arms audio
      (autoplay law); before that, lines wait silently (the board and
-     the green dot still show). */
+     the green dot still show).
+   - AN ENTRY THAT STARTS IS READ TO ITS LAST WORD (his report,
+     2026-11-01 ~22:09 CST: the voices read what's in the folder
+     "and not finishing" — an entry would start, then stop, and the
+     talk never continued). Two holes closed. (a) UTTERANCE SIZE:
+     chunks are built from whole sentences under a ~150-char cap
+     (~10s of speech each); the old merger packed up to ~230 chars
+     (~15-18s) into ONE utterance — the size real engines truncate
+     mid-utterance (the WebView synth above all), so entries lost
+     their tails chunk by chunk. A sentence longer than the cap is
+     split at clause edges, never merged into a bigger chunk.
+     (b) THE COLLAPSE ATE STARTED LINES: any room block (his drag,
+     the page hiding while he switched apps to install an update)
+     parks a speaking entry mid-entry as "held" — and the held-line
+     collapse then DROPPED it for good if a fresher line from the
+     same agent had queued meanwhile; its remaining chunks were
+     never read, never marked, just gone (proven in the battery:
+     227 of 2,279 chars read, then silence). Collapse now applies
+     ONLY to lines that never started; a started line parks,
+     resumes, and finishes, and fresher lines wait behind it. */
 (function () {
   'use strict';
   if (window.__vpcBoardSpeak) return;
@@ -180,19 +199,34 @@
                fp: hash(speaker + '|' + stamp + '|' + text.slice(0, 100)) };
     }).filter(function (e) { return e.text && (e.speaker === 'ALLON' || e.speaker === 'Babyboo'); });
   }
+  /* Sentence-built chunks, ~150 chars max (~10s of speech each).
+     One utterance per chunk, chained on completion — an entry is a
+     queue of short utterances, never one long one: real engines
+     (the WebView speechSynthesis first among them) truncate long
+     utterances mid-flight, which is how entries used to lose their
+     tails. Whole sentences merge only while the chunk stays under
+     the cap; a sentence longer than the cap is flushed out of the
+     merge and split at clause edges into its own pieces. */
+  var CHUNK_MAX = 150;
   function chunkText(text) {
     var sents = text.match(/[^.!?]+[.!?]+["')\]]*\s*|[^.!?]+$/g) || [text];
     var chunks = [], buf = '';
     function pushBuf() { if (buf.trim()) chunks.push(buf.trim()); buf = ''; }
     sents.forEach(function (s) {
       s = s.trim(); if (!s) return;
-      while (s.length > 230) {           /* split a long sentence at a clause edge */
-        var cut = Math.max(s.lastIndexOf(', ', 230), s.lastIndexOf(' — ', 230), s.lastIndexOf(' ', 230));
-        if (cut < 60) cut = 230;
-        buf += (buf ? ' ' : '') + s.slice(0, cut + 1).trim(); pushBuf();
-        s = s.slice(cut + 1).trim();
+      if (s.length > CHUNK_MAX) {
+        pushBuf();
+        while (s.length > CHUNK_MAX) {   /* split a long sentence at a clause edge */
+          var cut = Math.max(s.lastIndexOf(', ', CHUNK_MAX), s.lastIndexOf('; ', CHUNK_MAX),
+                             s.lastIndexOf(' — ', CHUNK_MAX), s.lastIndexOf(' ', CHUNK_MAX));
+          if (cut < 60) cut = CHUNK_MAX;
+          chunks.push(s.slice(0, cut + 1).trim());
+          s = s.slice(cut + 1).trim();
+        }
+        if (s) chunks.push(s);
+        return;
       }
-      if ((buf + ' ' + s).trim().length > 230) pushBuf();
+      if ((buf + ' ' + s).trim().length > CHUNK_MAX) pushBuf();
       buf += (buf ? ' ' : '') + s;
     });
     pushBuf();
@@ -578,7 +612,7 @@
   /* ---------------- the pump ------------------------------------------ */
   function enqueue(entry, pinned) {
     var e = { speaker: entry.speaker, stamp: entry.stamp, fp: entry.fp,
-              chunks: chunkText(entry.text), idx: 0, fails: 0,
+              chunks: chunkText(entry.text), idx: 0, fails: 0, started: false,
               held: !!blocked(), pinned: !!pinned, attr: '' };
     if (!e.chunks.length) return;
     S.queue.push(e);
@@ -588,8 +622,11 @@
   function dequeue() {
     while (S.queue.length) {
       var e = S.queue.shift();
-      /* held lines collapse to the freshest per agent — no backlog */
-      if (e.held && !e.pinned) {
+      /* held lines collapse to the freshest per agent — no backlog.
+         ONLY lines that never started may collapse: a line that has
+         begun speaking (even one parked mid-entry by a room block)
+         is read to its last word; fresher lines wait behind it. */
+      if (e.held && !e.pinned && !e.started) {
         var later = S.queue.some(function (q) { return q.speaker === e.speaker; });
         if (later) { log('collapse: fresher ' + e.speaker + ' line held — older held line dropped'); continue; }
       }
@@ -598,6 +635,7 @@
     return null;
   }
   function startEntry(e) {
+    e.started = true;   /* from here the entry is collapse-proof: it finishes */
     var distinct = voicesDistinct();
     e.attr = (e.speaker !== S.lastSpoken || !distinct) ? (e.speaker === 'ALLON' ? 'Allon' : 'Babyboo') : '';
     S.lastSpoken = e.speaker; lsSet(LS_SPK, e.speaker);
