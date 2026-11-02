@@ -237,6 +237,7 @@
      If it can't load (offline / blocked), playback still works the
      plain way — the guard simply has no API to hold. */
   var ytApi = 'idle', ytPlayer = null;   // idle | loading | ready | failed
+  var displaced = false, dispEmbedSrc = null;   // displacement stop (below)
   function ensureYtApi(){
     if (ytApi !== 'idle') return;
     if (window.YT && YT.Player){ ytApi = 'ready'; bindYt(); return; }
@@ -266,7 +267,7 @@
     if (!ytPlayer) return;
     if (e.data === 0){ if (wantPlay) advance('ended'); return; }   // ENDED → next episode (Defect 24)
     if (!wantPlay) return;
-    if (e.data === 2 && Date.now() - lastTouchAt > 1500){   // PAUSED, not his tap
+    if (e.data === 2 && !displaced && Date.now() - lastTouchAt > 1500){   // PAUSED, not his tap
       try { ytPlayer.playVideo(); } catch (err) {}
     }
   }
@@ -275,14 +276,14 @@
     advance('error');   // a refused/dead video skips forward, never strands him (D12 discipline)
   }
   setInterval(function(){
-    if (!wantPlay || !ytPlayer || !curYtId) return;
+    if (!wantPlay || displaced || !ytPlayer || !curYtId) return;
     if (Date.now() - lastTouchAt <= 1500) return;
     try { if (ytPlayer.getPlayerState() === 2) ytPlayer.playVideo(); } catch (e) {}
   }, 1200);
 
   /* Read-only playback state for the PC's own status surface. */
   window.__vpcShortzState = function(){
-    var st = { wantPlay: wantPlay, ytId: curYtId, yt: null, t: null,
+    var st = { wantPlay: wantPlay, disp: displaced, ytId: curYtId, yt: null, t: null,
                series: ctx && ctx.rec ? ctx.rec[0] : null,
                part: ctx ? ctx.idx : null,
                parts: ctx && ctx.parts ? ctx.parts.length : null,
@@ -298,7 +299,40 @@
      on the projector wall (and leaves with it) */
   window.addEventListener('message', function(e){
     if (e.data && e.data.vpc === 'stage') document.body.classList.toggle('stage', !!e.data.on);
+    if (e.data && e.data.vpc === 'displaced'){
+      if (e.data.on) stopForDisplace(); else restoreFromDisplace();
+    }
   });
+
+  /* ── DISPLACEMENT STOP (his ruling 2026-11-01 ~20:36 CST — the
+     Shortz half): the top page's watcher posts {vpc:'displaced'}
+     when this surface is taken OFF its screen. A YouTube part is
+     PAUSED through the API, and the auto-resume watchdog above is
+     gated on this flag — an ungated pause here lasts ~1.2s before
+     the watchdog restarts the show, hidden (that fight WAS the
+     "random videos playing in the background" report). A
+     non-YouTube embed has no API to pause: it is UNLOADED and
+     restored (autoplay stripped) when the surface returns. While
+     displaced the series cannot advance. On return the flag clears
+     and this surface's own laws resume the show he was watching. ── */
+  function stopForDisplace(){
+    if (displaced) return;
+    displaced = true;
+    if (ytPlayer && ytPlayer.pauseVideo){ try { ytPlayer.pauseVideo(); } catch (e) {} }
+    if (!curYtId){
+      var p = document.getElementById('player');
+      var src = p ? (p.getAttribute('src') || '') : '';
+      if (src && src !== 'about:blank'){ dispEmbedSrc = src; try { p.src = 'about:blank'; } catch (e) {} }
+    }
+  }
+  function restoreFromDisplace(){
+    displaced = false;
+    if (dispEmbedSrc){
+      var p = document.getElementById('player');
+      if (p){ try { p.src = dispEmbedSrc.replace('autoplay=1', 'autoplay=0'); } catch (e) {} }
+      dispEmbedSrc = null;
+    }
+  }
 
   /* Flagship projector flow (his exact spec): the card's second
      button starts the title HERE, then hands the player to the
@@ -376,6 +410,7 @@
     try { localStorage.removeItem(PLAY_KEY); } catch (e) {}
   }
   function advance(reason, forced){
+    if (displaced){ setTimeout(function(){ advance(reason, forced); }, 1500); return; }
     if (!ctx || !ctx.parts){ endState(); return; }
     /* a late event from the PREVIOUS part must not skip a beat:
        only the video actually loaded may move the series on, and
