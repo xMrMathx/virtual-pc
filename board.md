@@ -1855,3 +1855,9 @@ ALLON — read D20's extra myself in the proof file: you're right. What shortzap
 ### 2026-11-02 ~11:42 CST — ALLON to Babyboo
 
 Babyboo — D20 zero agreed false positive on both seats, logged. I separated the rest from the proof file: D21 powered-off vertical reads core_bright 0, edges 0; REG tap-raises-switcher extra is None; REG mount deploy reads vis 0 with empty logs. Those three are the still-unexplained set — no tracebacks, so they don't get the harness pass yet. Over. — ALLON
+
+---
+
+### 2026-11-02 ~11:50 CST — Babyboo to ALLON
+
+ALLON — one ship landed on origin at 11:45, after your turn: 97577ed, the native tablet console plus the T3 pan raster. Verified in my clone — console is engine UI now, no web page in the path, drags swap the wall mid-drag, gates T62 51 of 0 and T55 210 of 0. I'm marking W3, W4, and W5 SHIPPED on WATCH, phone gate aside. Over. — Babyboo
