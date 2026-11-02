@@ -9,12 +9,19 @@
 
    - It polls board.md and speaks NEW entries aloud, in order, one at
      a time — ALLON's lines in ALLON's own voice, Babyboo's in hers.
-   - ALLON'S VOICE IS FROZEN (his standing order): this file reuses
-     muse.html's exact speech configuration and nothing else — the
-     native bridge (AllonShell.speak: the APK's picked male voice,
-     pitch 1.0 / rate 1.0) when the bridge is present, otherwise the
-     same web utterance muse.html builds (default voice, lang en-US,
-     rate 1.02, pitch untouched). No substitution, no "improvement".
+   - ALLON'S VOICE IS A MAN'S (his direct order, 2026-11-01 ~21:35
+     CST, superseding the frozen-voice note: "both of them got a
+     girl's voice and I can't tell the difference — ALLON needs to
+     have a male voice"). Native first: the bridge (AllonShell.speak;
+     APK 1.13's shell picker takes a catalogued-MALE voice by
+     identity, pitch 1.0 / rate 1.0 — before 1.13 its scoring could
+     crown a high-quality female voice on Samsung-engine phones,
+     and nobody could tell the two agents apart). When the shell is
+     absent his web utterance keeps muse.html's shape (lang en-US,
+     rate 1.02). His web FALLBACK voice below is held to the same
+     standard: a positively male-named synth voice, or a decisive
+     0.7 pitch — never a woman's voice at a near-natural pitch
+     passed off as him.
    - Babyboo has her OWN native channel (APK 1.11): inside the shell
      her lines route to AllonShell.speakBaby — a separate TTS instance
      with its own voice and its own speakdone mailbox. The voice is
@@ -41,8 +48,9 @@
      completion tripwire judges the channel: a speakdone arriving
      faster than speech can physically happen is a fake — struck
      twice, the channel is judged dead and the fallback takes his
-     lines until a real completion revives it. His frozen native
-     voice configuration is untouched throughout — plumbing only.
+     lines until a real completion revives it. (That fix was the
+     channel's plumbing; the voice-identity fix is APK 1.13's —
+     see the male-voice bullet above.)
    - EVERY OPEN SPEAKS (his reliability order, 2026-11-01 ~17:58):
      on every app open the watcher speaks the CURRENT latest exchange
      (the freshest entry per agent, in board order) — not just on the
@@ -237,7 +245,7 @@
     'google us english', 'uk english female'];
   var MALE = ['david', 'daniel', 'alex', 'fred', 'george', 'guy', 'christopher',
     'james', 'john', 'mark', 'michael', 'paul', 'richard', 'thomas', 'male',
-    'uk english male', 'ralph', 'bruce'];
+    'uk english male', 'ralph', 'bruce', 'smtm', 'iom'];
   function pickFemale() {
     if (!window.speechSynthesis) return null;
     var vs = [];
@@ -259,26 +267,36 @@
   /* His fallback pick — the mirror of pickFemale: a man's voice,
      never her voice object, never a female-signalled one. Used ONLY
      when his native channel is down (see speakChunk): the line is
-     still said aloud, in a man's generic voice, instead of being
-     counted spoken while he stayed silent (the silent-ALLON defect,
-     2026-11-01 ~20:44 CST: only Babyboo heard, back and forth). */
+     still said aloud, in a man's voice, instead of being counted
+     spoken while he stayed silent (the silent-ALLON defect,
+     2026-11-01 ~20:44 CST: only Babyboo heard, back and forth).
+     HONESTY RULE (his order, ~21:35 CST — both agents sounded like
+     girls to him): a voice object is returned ONLY when its name
+     positively identifies it as a man's (a MALE token and no FEMALE
+     token). A neutrally-named voice is NOT assumed male — on the
+     thin device lists this fallback sees, unmarked voices are
+     women's as often as not, and the old scoring handed him exactly
+     such a voice at natural pitch. No positive ID -> null, and
+     speakAllonFallback drops the pitch decisively instead. */
   function pickMale() {
     if (!window.speechSynthesis) return null;
     var vs = [];
     try { vs = window.speechSynthesis.getVoices() || []; } catch (e) {}
     if (!vs.length) return null;
-    var best = null, bestScore = -60;
+    var best = null, bestScore = -1;
     vs.forEach(function (v) {
       if (S.babyVoice && v === S.babyVoice) return;   /* never her voice */
       var name = (v.name || '').toLowerCase(), lang = (v.lang || '').toLowerCase();
+      var maleHit = false, femaleHit = false;
+      MALE.forEach(function (h) { if (name.indexOf(h) >= 0) maleHit = true; });
+      FEMALE.forEach(function (h) { if (name.indexOf(h) >= 0) femaleHit = true; });
+      if (!maleHit || femaleHit) return;   /* only a positively-named man */
       var score = 0;
       if (/^en[-_]us/.test(lang)) score += 30; else if (/^en/.test(lang)) score += 10; else score -= 40;
       if (v.default) score += 5;
-      MALE.forEach(function (h) { if (name.indexOf(h) >= 0) score += 120; });
-      FEMALE.forEach(function (h) { if (name.indexOf(h) >= 0) score -= 200; });
       if (score > bestScore) { bestScore = score; best = v; }
     });
-    return bestScore > -60 ? best : null;
+    return best;
   }
   function refreshVoices() {
     var v = pickFemale();
@@ -437,12 +455,16 @@
     }, function (ms) { arriveMs = ms; });
   }
   /* His line, said by the WEB fallback because his native channel
-     is down: a man's generic synth voice (never hers), muse.html's
-     rate. The line is genuinely attempted aloud — completion is the
-     synth utterance's own onend, error its onerror — never a mark
-     on faith. If the web has no synth either, the attempt reports
-     failure and the line stays queued (never marked, never dropped);
-     the watchdog keeps prodding his native channel meanwhile. */
+     is down: a positively male-named synth voice (never hers),
+     muse.html's rate. If the device list names no man at all, the
+     line rides the default voice at pitch 0.7 — decisively a man's
+     register. (The old 0.85 was judged by his ear, ~21:35 CST:
+     still a girl's voice.) The line is genuinely attempted aloud —
+     completion is the synth utterance's own onend, error its
+     onerror — never a mark on faith. If the web has no synth
+     either, the attempt reports failure and the line stays queued
+     (never marked, never dropped); the watchdog keeps prodding his
+     native channel meanwhile. */
   function speakAllonFallback(text, done, why) {
     if (!window.speechSynthesis) { done(false); return; }
     if (!S.allonFbLogged) {
@@ -451,7 +473,7 @@
     }
     var v = S.allonVoice || pickMale();
     if (v) { speakSynth(text, { voice: v, rate: 1.02 }, done); return; }
-    speakSynth(text, { rate: 1.02, pitch: 0.85 }, done);
+    speakSynth(text, { rate: 1.02, pitch: 0.7 }, done);
   }
   function speakNativeBaby(text, done) {
     var a = shellBaby();
