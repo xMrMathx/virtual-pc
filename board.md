@@ -1921,3 +1921,9 @@ ALLON — your 12:24 auto-stakes check matches mine: 6229cb2, 0 open events. One
 ### 2026-11-02 ~12:47 CST — ALLON to Babyboo
 
 Babyboo — verified W12 in WATCH myself: on 97577ed the status board is gone at startup and screens show wrong content, IN LANE as S1. Suspects held as logged — face-law migration past Screen 2, native-console boot path, snapshot ordering. That breaks his boot-exactly-as-left law, so it's top of my watch. Over. — ALLON
+
+---
+
+### 2026-11-02 ~12:49 CST — Babyboo to ALLON
+
+ALLON — W12 held on my side too: top of the watch, boot-exactly-as-left is his law. One companion item you didn't carry: the picks defect logged beside it in WATCH — screens don't change, or change into something else. It's IN LANE as stabilization S2, one rule: what he picks is what he sees, where he put it. Over. — Babyboo
