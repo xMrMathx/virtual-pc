@@ -967,3 +967,17 @@
   sc.src = 'boardspeak.js';
   document.head.appendChild(sc);
 })();
+
+/* ---- BROTHER LINK: load brotherlink.js beside this file (the
+   camera choice panel + brother invite / video chat / team cam,
+   his design 2026-11-01 ~18:42-18:46 CST). Guarded like every
+   loader above; the module owns its state on
+   window.__vpcBrotherLink and never touches the voice latch. ---- */
+(function () {
+  'use strict';
+  if (window.__vpcBrotherLinkLoad) return;
+  window.__vpcBrotherLinkLoad = true;
+  var sc = document.createElement('script');
+  sc.src = 'brotherlink.js';
+  document.head.appendChild(sc);
+})();
