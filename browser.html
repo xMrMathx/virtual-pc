@@ -42,7 +42,7 @@
   /* ---------- page area ---------- */
   #pages { flex:1; position:relative; margin:4px; border:1.5px solid rgba(126,231,255,.14);
            border-radius:8px; overflow:hidden; background:#0a0e16; }
-  #pages iframe { position:absolute; inset:0; width:100%; height:100%; border:0; background:#fff; display:none; }
+  #pages iframe { position:absolute; inset:0; width:100%; height:100%; border:0; background:#0a0e16; display:none; }
   #pages iframe.on { display:block; }
   #veil { position:absolute; left:0; right:0; top:0; height:3px; background:transparent; display:none; z-index:5; }
   #veil .fill { height:100%; width:38%; background:#00f0ff; border-radius:2px;
@@ -627,6 +627,39 @@
   }, 400);
 
   window.addEventListener('pagehide', save);
+
+  /* ------------- repaint guard (white-screen fix) -------------
+     His report (2026-11-01): the middle top screen shows the
+     browser placed and loaded, but at room zoom the glass is a
+     white slab — the document is alive (it paints when zoomed);
+     the WebView has dropped the cross-origin frame's texture when
+     the room rescaled this surface (placement / zoom round trip)
+     and never repainted it, and the frame's own background was
+     #fff, so every unpainted moment read as a white screen.
+     Two-part cure, both inside the surface: the frame background
+     is now the surface dark (above), and this watcher tracks the
+     surface's own on-screen rect — after it moves/resizes and
+     settles, it pulses the active frame's layer so the compositor
+     re-renders it. The document is NEVER reloaded (no src touch,
+     no state loss) — only its layer is repainted. */
+  var lastRect = '', rectStable = 0, rectDirty = false;
+  setInterval(function () {
+    var r = null;
+    try { r = window.frameElement && window.frameElement.getBoundingClientRect(); } catch (e) {}
+    if (!r) return;
+    var key = Math.round(r.left) + ',' + Math.round(r.top) + ',' +
+              Math.round(r.width) + ',' + Math.round(r.height);
+    if (key !== lastRect) { lastRect = key; rectDirty = true; rectStable = 0; return; }
+    if (rectDirty && ++rectStable >= 2) {
+      rectDirty = false; rectStable = 0;
+      var t = activeTab();
+      if (t && t.f && !t.loading && !t.door) {
+        var f = t.f;
+        f.style.transform = 'translateZ(0)';
+        requestAnimationFrame(function () { f.style.transform = ''; });
+      }
+    }
+  }, 400);
 
   /* ---------------- boot ---------------- */
   if (!restore()) {
