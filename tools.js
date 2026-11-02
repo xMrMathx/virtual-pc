@@ -981,3 +981,65 @@
   sc.src = 'brotherlink.js';
   document.head.appendChild(sc);
 })();
+
+/* ---- Drop-down mount view tabs (his order, 2026-11-01 16:56 CST):
+   the mounts hide themselves by default and never show on their
+   own. Where a stowed mount's 3D lip sits off-frame (portrait
+   rest), this slim tab rides the top edge of the view so the mount
+   is always within reach: ONE tap asks the engine to slide that
+   mount down (window.__vpcMountTap). The engine owns the truth and
+   reports it in window.__vpcMountState {l, r, show} — a tab is
+   visible only while its mount is stowed. Taps land on the tab
+   element itself, never on the room canvas, so the double-tap
+   zoom law is untouched. */
+(function () {
+  'use strict';
+  if (window.__vpcMountTabs) return;
+  window.__vpcMountTabs = true;
+
+  var css = document.createElement('style');
+  css.textContent = [
+    '.vpc-mtab{position:fixed;top:0;z-index:9980;display:none;align-items:center;gap:8px;',
+    'padding:8px 14px 10px;background:rgba(8,10,18,.85);border:1.5px solid #2c2c3e;border-top:none;',
+    'color:#eaf6ff;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;',
+    'font-size:13px;font-weight:800;letter-spacing:1.2px;cursor:pointer;',
+    'user-select:none;-webkit-user-select:none;touch-action:manipulation}',
+    '.vpc-mtab .n{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;',
+    'border-radius:6px;color:#04121a;font-size:14px}',
+    '#vpc-mtab-l{left:10px;border-radius:0 0 12px 12px}',
+    '#vpc-mtab-r{right:10px;border-radius:0 0 12px 12px}',
+    '#vpc-mtab-l .n{background:#40d9ff}',
+    '#vpc-mtab-r .n{background:#ff59d9}'
+  ].join('');
+  document.head.appendChild(css);
+
+  function make(id, num, mountId) {
+    var e = document.createElement('div');
+    e.className = 'vpc-mtab';
+    e.id = id;
+    var n = document.createElement('span');
+    n.className = 'n';
+    n.textContent = num;
+    var t = document.createElement('span');
+    t.textContent = 'MOUNT ▾';
+    e.appendChild(n);
+    e.appendChild(t);
+    e.addEventListener('pointerdown', function (ev) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      window.__vpcMountTap = mountId;
+      e.style.display = 'none';
+    });
+    document.body.appendChild(e);
+    return e;
+  }
+  var tabL = make('vpc-mtab-l', '7', 'mount_left');
+  var tabR = make('vpc-mtab-r', '8', 'mount_right');
+
+  setInterval(function () {
+    var d = null;
+    try { d = window.__vpcMountState; } catch (e) { d = null; }
+    tabL.style.display = (d && d.show && !d.l) ? 'flex' : 'none';
+    tabR.style.display = (d && d.show && !d.r) ? 'flex' : 'none';
+  }, 200);
+})();
