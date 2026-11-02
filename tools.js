@@ -1313,15 +1313,10 @@
   setInterval(push, 2000);
 })();
 
-/* ---- THE TABLET: load the arrangement console (tablet.js) beside
-   this file. Guarded like every block above; the console owns its
-   state on window.__vpcTabletUi and opens on the engine's
-   __vpcTabletPop (the camera-pop pattern). ---- */
-(function () {
-  'use strict';
-  if (window.__vpcTabletLoad) return;
-  window.__vpcTabletLoad = true;
-  var sc = document.createElement('script');
-  sc.src = 'tablet.js';
-  document.head.appendChild(sc);
-})();
+/* ---- THE TABLET: the arrangement console is ENGINE-NATIVE since
+   2026-11-02 (his order: "Everything goes through Godot" — the DOM
+   sheet froze his room and rendered as a strip). tablet.js is
+   retired and no longer loaded; the hub functions above
+   (__vpcSetSlotVol/__vpcSetMasterVol/__vpcSetMasterMuted/
+   __vpcSetChatterVol/__vpcMasterState) remain — the native console
+   drives them one-way. ---- */
