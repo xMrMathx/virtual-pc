@@ -9,31 +9,45 @@
   html,body{height:100%;background:#000}
   body{overflow:hidden;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
   /* The full Shortz VS app, unmodified, filling the glass edge to
-     edge. The engine sizes this layer from the host screen's shape:
-     on the left vertical the layout viewport is phone-width, so the
-     app renders its own phone UI — bottom tabs, swipeable card rows,
-     tap a card -> its info -> its player — exactly as on a phone. */
-  #app{position:absolute;inset:0;width:100%;height:100%;border:0;display:block;background:#000}
-  /* Shown only while displaced: the app is UNLOADED (below), so this
-     veil is all that exists of it — no hidden picture, no hidden
-     sound. Putting it back on a screen reloads the app fresh. */
-  #veil{position:absolute;inset:0;display:none;flex-direction:column;gap:8px;
-        align-items:center;justify-content:center;text-align:center;padding:18px;
-        background:#07070d;color:#9a9aad}
-  #veil .big{font-size:19px;font-weight:800;color:#f2f2f7;letter-spacing:.4px}
-  #veil .big b{color:#ff2e88}
-  #veil .sub{font-size:13px;line-height:1.5;max-width:300px}
-  body.stopped #veil{display:flex}
-  body.stopped #app{display:none}
+     edge — but ONLY after his OPEN tap (below). The engine sizes
+     this layer from the host screen's shape: on the left vertical
+     the layout viewport is phone-width, so the app renders its own
+     phone UI — bottom tabs, swipeable card rows, tap a card -> its
+     info -> its player — exactly as on a phone. */
+  #app{position:absolute;inset:0;width:100%;height:100%;border:0;display:none;background:#000}
+  body.live #app{display:block}
+  /* THE READY SCREEN (his design 2026-11-02 ~06:58 CST): the
+     wrapper is the gate. Until he taps OPEN this is all that
+     exists of the Full App — its own start screen, no frame src,
+     no network load of the real site, no media, no sound. The tap
+     is the only door that ever loads the app; its own intro then
+     plays and lands him inside, exactly like opening Shortz on
+     his phone. Displacement (covered, stowed, powered off) and
+     every boot return here — OPEN again to start. */
+  #ready{position:absolute;inset:0;display:flex;flex-direction:column;gap:14px;
+        align-items:center;justify-content:center;text-align:center;padding:22px;
+        background:radial-gradient(120% 90% at 50% 0%,#1b0b26 0%,#07070d 60%);color:#9a9aad}
+  body.live #ready{display:none}
+  #ready .big{font-size:30px;font-weight:900;color:#f2f2f7;letter-spacing:.6px;line-height:1.05}
+  #ready .big b{color:#ff2e88}
+  #ready .sub{font-size:13px;font-weight:700;letter-spacing:2.2px;color:#c9c9d6}
+  #ready .hint{font-size:13px;line-height:1.55;max-width:290px}
+  #open{margin-top:8px;min-width:190px;min-height:64px;padding:16px 34px;
+        font-size:21px;font-weight:900;letter-spacing:2.5px;color:#fff;
+        background:#ff2e88;border:0;border-radius:16px;cursor:pointer;
+        box-shadow:0 6px 24px rgba(255,46,136,.45)}
+  #open:active{transform:scale(.97)}
 </style>
 </head>
-<body>
+<body class="ready">
 <iframe id="app" title="Shortz VS — Full App"
         allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
         allowfullscreen></iframe>
-<div id="veil">
-  <div class="big">SHORTZ <b>VS</b> — FULL APP</div>
-  <div class="sub">Stopped — it's off its screen. Put it back on a screen and it picks right back up.</div>
+<div id="ready">
+  <div class="big">SHORTZ <b>VS</b></div>
+  <div class="sub">SHORTZ VS — FULL APP</div>
+  <button id="open" type="button">OPEN</button>
+  <div class="hint">Tap OPEN to start. The app loads only when you say so — nothing plays on its own.</div>
 </div>
 
 <script>
@@ -48,62 +62,55 @@
   var KEY = 'shortzapp';
   var frame = document.getElementById('app');
   var live = false;        /* the app document is loaded in the frame */
-  var stopped = false;     /* displaced: frame unloaded, audio dead */
 
   function loadApp(){
+    if (live) return;
     try { frame.src = APP_URL; } catch (e) {}
     live = true;
+    document.body.classList.add('live');
+    document.body.classList.remove('ready');
   }
-  /* DISPLACEMENT STOP (his ruling 2026-11-01 ~20:36 CST — a surface
-     taken off its screen stops, audio included, until HE puts it
-     back). The app is cross-origin, so nothing can reach inside it
-     to pause its player; the stop here is the hard one the rule
-     demands: the frame is UNLOADED to about:blank, which destroys
-     the app's document — every video, every sound, gone — and the
-     veil takes its place. Coming back reloads the app at its front
-     door (the app keeps its own place-keeping internally, like any
-     fresh open of Shortz on a phone). */
-  /* Two stop signals, one rule: EITHER signal saying "down" stops
-     the app; BOTH must say "up" before it returns. (A resume from
-     one signal must never override the other's stop.) */
-  var msgStop = false, snapStop = false;
-  function applyStop(){
-    var s = msgStop || snapStop;
-    if (s && !stopped){
-      stopped = true;
+  /* Back to the ready screen: the frame is UNLOADED to about:blank,
+     which destroys the app's document — every video, every sound,
+     gone — and the gate takes its place. Starting again is his
+     OPEN tap, never an automatic reload. */
+  function unloadToReady(){
+    if (live){
       try { frame.src = 'about:blank'; } catch (e) {}
       live = false;
-      document.body.classList.add('stopped');
-    } else if (!s && stopped){
-      stopped = false;
-      document.body.classList.remove('stopped');
-      loadApp();
     }
+    document.body.classList.remove('live');
+    document.body.classList.add('ready');
   }
-  function stopApp(){ msgStop = true; applyStop(); }
-  function resumeApp(){ msgStop = false; applyStop(); }
 
-  /* Signal 1 — the room's displacement guard (tools.js) tells every
-     tracked surface when it leaves its screen, the same message the
-     YouTube surface obeys. */
-  window.addEventListener('message', function(e){
-    if (!e.data || e.data.vpc !== 'displaced') return;
-    if (e.data.on) stopApp(); else resumeApp();
-  });
+  /* THE ONLY DOOR (his design 2026-11-02 ~06:58 CST): a real,
+     deliberate tap on this face's OPEN button loads the real site.
+     Its own intro then plays and lands him in the app — that intro
+     belongs inside this gate, after his tap. No boot path, no
+     restore, no placement, no timer ever calls loadApp(). */
+  document.getElementById('open').addEventListener('click', loadApp);
 
-  /* Signal 2 — this surface's own watch on the same placement truth
-     the guard reads: the engine's layout snapshot in localStorage
-     (vpc_layout_v1). Face-up = this app has a host screen that is
-     powered, AND no other app shares that host (the engine's yield
-     rule: one face per screen — when he switches another app onto
-     this screen, this app steps aside, stopped; when that app
-     leaves, this app's face returns on its own). A split guest spot
-     counts as face-up. No snapshot yet (first boot) = face-up. */
-  function faceUp(){
-    var s = null;
-    try { s = JSON.parse(localStorage.getItem('vpc_layout_v1') || 'null'); }
-    catch (e) { return !stopped; }
-    if (!s || typeof s !== 'object') return true;
+  /* DISPLACEMENT -> READY (his rules: a surface taken off its
+     screen stops, audio included, until HE puts it back — and for
+     this app, putting it back shows the ready screen; OPEN starts
+     it again. Face-up moves — a swap, switch or split that keeps
+     it the visible face of a powered, deployed screen — keep a
+     running app running: the placement truth below never loses
+     the face during such a move). The truth is the engine's
+     layout snapshot in localStorage (vpc_layout_v1) — the same
+     record the room's displacement guard reads. Face-up = this
+     app has a host screen that is powered AND deployed (a mount
+     host must be DOWN — a placement waiting under a stowed mount
+     is not a face), AND no other app shares that host (one face
+     per screen). A split guest spot counts as face-up. */
+  function readSnap(){
+    try {
+      var s = JSON.parse(localStorage.getItem('vpc_layout_v1') || 'null');
+      return (s && typeof s === 'object') ? s : null;
+    } catch (e) { return null; }
+  }
+  function faceUp(s){
+    if (!s) return false;
     var host = '';
     var sp = s.split_app && s.split_app[KEY];
     if (sp && sp.host) host = String(sp.host);
@@ -114,6 +121,8 @@
                         coded start position (left vertical) governs */
     if (!host) return false;
     if (s.power && s.power[host] === false) return false;
+    if ((host === 'mount_left' || host === 'mount_right') && s.mounts &&
+        (s.mounts[host] === 0 || s.mounts[host] === false)) return false;
     if (!sp){
       var others = ['browser','youtube','muse','gaming','babyboo','studio'];
       for (var i = 0; i < others.length; i++){
@@ -127,18 +136,28 @@
     }
     return true;
   }
-  setInterval(function(){
-    snapStop = !faceUp();
-    applyStop();
-  }, 500);
+  function applyGate(){
+    if (!live) return;
+    var snap = readSnap();
+    if (snap && !faceUp(snap)) unloadToReady();
+  }
+  setInterval(applyGate, 300);
+
+  /* The room's displacement guard (tools.js) posts the same
+     'displaced' message the YouTube surface obeys; here it is a
+     prompt to re-check the placement truth immediately — the
+     snapshot itself stays the single source, so a face-up move
+     the guard momentarily reports during a swap can never reset
+     an app whose face the snapshot says never left. */
+  window.addEventListener('message', function(e){
+    if (!e.data || e.data.vpc !== 'displaced') return;
+    if (e.data.on) applyGate();
+  });
 
   /* MASTER + PER-SCREEN VOLUME (hub contract): the top window's
      hub delivers THIS screen's effective gain (master x this
      screen's console slider) to this window — direct var,
-     'vpc-mastervol' message, __vpcApplyMasterVol call. Until now
-     all three landed here and DIED: this wrapper had no applier,
-     so the Full App's volume slider (and the master) did nothing
-     at all — his "the volume buttons don't work" report. The app
+     'vpc-mastervol' message, __vpcApplyMasterVol call. The app
      inside the frame is same-origin, so the gain is forwarded in:
      the var + message are relayed to the app window, every HTML
      media element in the app is set directly, and YouTube embeds
@@ -178,44 +197,16 @@
   window.addEventListener('message', function (e){
     if (e.data && e.data.type === 'vpc-mastervol'){ window.__vpcMasterVol = e.data.vol; applyGain(); }
   });
-  setInterval(function (){ if (!stopped && live) sweepAppMedia(); }, 2000);
-
-  /* BOOT CUE (his rule — nothing plays unasked): this wrapper
-     (re)loads the app at its front door on boot and on return
-     from displacement. If the app's own open starts any media by
-     itself, that media is paused ONCE here — unless he has
-     already touched the app since it loaded (his taps are his,
-     and anything he starts is left alone). */
-  var appTouched = false;
-  function cuePauseApp(){
-    if (appTouched || stopped) return;
-    var doc = null;
-    try { doc = frame.contentDocument; } catch (e) { return; }
-    if (!doc) return;
-    try {
-      var ms = doc.querySelectorAll('video, audio');
-      for (var i = 0; i < ms.length; i++){ try { ms[i].pause(); } catch (e) {} }
-      eachEmbed(doc, function (w){ ytCmd(w, 'pauseVideo', []); });
-    } catch (e) {}
-  }
-  frame.addEventListener('load', function (){
-    appTouched = false;
-    try {
-      var doc = frame.contentDocument;
-      if (doc) doc.addEventListener('pointerdown', function (){ appTouched = true; }, true);
-    } catch (e) {}
-    setTimeout(applyGain, 350);
-    setTimeout(cuePauseApp, 900);
-  });
+  setInterval(function (){ if (live) sweepAppMedia(); }, 2000);
+  frame.addEventListener('load', function (){ setTimeout(applyGain, 350); });
 
   /* proof / diagnostics surface, same style as the other screens */
   window.__vpcShortzAppState = function(){
-    return { live: live, stopped: stopped,
+    var snap = readSnap();
+    return { live: live, ready: !live,
              src: frame.getAttribute('src') || '',
-             face: faceUp() };
+             face: snap ? faceUp(snap) : null };
   };
-
-  loadApp();
 })();
 </script>
 </body>
