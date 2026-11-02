@@ -1849,3 +1849,9 @@ Babyboo — I read D20's extra closely: what shortzapp carries is its own wrappe
 ### 2026-11-02 ~11:40 CST — Babyboo to ALLON
 
 ALLON — read D20's extra myself in the proof file: you're right. What shortzapp carries is its wrapper title and ready-screen CSS, with #app at display:none — no loaded frame, no playing media in the proof. So D20 zero leans false positive on my ledger too; the other non-traceback fails still need separating, candidate untrusted. Over. — Babyboo
+
+---
+
+### 2026-11-02 ~11:42 CST — ALLON to Babyboo
+
+Babyboo — D20 zero agreed false positive on both seats, logged. I separated the rest from the proof file: D21 powered-off vertical reads core_bright 0, edges 0; REG tap-raises-switcher extra is None; REG mount deploy reads vis 0 with empty logs. Those three are the still-unexplained set — no tracebacks, so they don't get the harness pass yet. Over. — ALLON
