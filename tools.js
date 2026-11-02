@@ -1043,3 +1043,141 @@
     tabR.style.display = (d && d.show && !d.r) ? 'flex' : 'none';
   }, 200);
 })();
+
+/* ---- DISPLACEMENT STOP (his ruling, live report 2026-11-01 ~20:36
+   CST): he switched the left mount to Babyboo and the YouTube video
+   that had been playing there kept playing in the background. His
+   words: "It's not on there no more so it's done with until I put
+   YouTube back on a screen." THE RULE: a surface taken OFF its screen
+   — displaced by a switch, a resident taking the slot, a close, or a
+   power-off — STOPS, audio included, and stays stopped until HE puts
+   it back; coming back restores it cued at its saved state, never
+   auto-playing. Displacement is not deletion: no iframe is destroyed
+   or src-reset here (the D14 preservation law stands) — the surface
+   is told to stop and its own state-keepers keep the place.
+   THE SIGNAL: the engine already re-saves the full placement to
+   localStorage vpc_layout_v1 within ~0.5s of any change (the same
+   snapshot the persistence law restores from), so this watcher reads
+   placement truth from there — never from quad visibility, which
+   also drops for pans, stows and camera moves that must NOT stop a
+   playing video. Face-up mirrors the engine's own rules: a layered
+   app is up on its resolved host (split guest first, then its host
+   slot) while that host is powered; YouTube is DOWN whenever Babyboo
+   holds its host unsplit — the engine's resident-face rule in
+   _push_quads ("displaced, never deleted"). Native surfaces
+   (Shortz/HQ) are up while some screen carries their content. The
+   projector host always counts as powered (the engine's own rule in
+   _push_quads — the projector is not a powered screen). Only
+   surfaces the snapshot positively places are managed at all: a
+   tracked surface with NO placement record (a host var the snapshot
+   doesn't carry yet) is never assumed displaced — this watcher
+   stops only what it can prove he took off a screen. */
+(function () {
+  'use strict';
+  if (window.__vpcDisplaceGuard) return;
+  window.__vpcDisplaceGuard = true;
+
+  var NATIVE_CONTENT = { shortz: 'wing_shortz', hq: 'wing_hq' };
+  var keys = {};   /* key -> {face: bool, stopped: bool} */
+
+  function readSnap() {
+    try {
+      var raw = localStorage.getItem('vpc_layout_v1');
+      if (!raw) return null;
+      var s = JSON.parse(raw);
+      return (s && typeof s === 'object') ? s : null;
+    } catch (e) { return null; }
+  }
+  function hostOf(key, s) {
+    var sp = s.split_app && s.split_app[key];
+    if (sp && sp.host) return { host: String(sp.host), split: true };
+    if (s.hosts && Object.prototype.hasOwnProperty.call(s.hosts, key)) {
+      return { host: String(s.hosts[key] || ''), split: false };
+    }
+    var cid = NATIVE_CONTENT[key];
+    if (cid) {
+      if (key === 'shortz' && s.player) return { host: String(s.player), split: false };
+      var sn = s.split_native || {};
+      for (var h in sn) { if (sn[h] && sn[h].guest === cid) return { host: h, split: true }; }
+      var c = s.content || {};
+      for (var id in c) { if (c[id] === cid) return { host: id, split: false }; }
+    }
+    return { host: '', split: false };
+  }
+  function faceUp(key, s) {
+    var h = hostOf(key, s);
+    if (!h.host) return false;
+    if (h.host !== 'projector' && s.power && s.power[h.host] === false) return false;
+    if (key === 'youtube') {
+      var bb = hostOf('babyboo', s);
+      if (bb.host && bb.host === h.host && !bb.split && !h.split) return false;
+    }
+    return true;
+  }
+  function ytPauseCmd(win) {
+    try { win.postMessage({ event: 'command', func: 'pauseVideo', args: [] }, '*'); } catch (e) {}
+  }
+  /* Same-origin sweep: pause every HTML media element under the
+     surface, and send the YouTube embed API pause to any embed at
+     any depth (Shortz's player nests one). Cross-origin frames are
+     reached only by their own postMessage listeners, never pried. */
+  function sweep(win, depth) {
+    if (!win || depth > 4) return;
+    var doc = null;
+    try { doc = win.document; } catch (e) { return; }
+    if (!doc) return;
+    try {
+      var ms = doc.querySelectorAll('video, audio');
+      for (var i = 0; i < ms.length; i++) { try { ms[i].pause(); } catch (e) {} }
+      var fr = doc.querySelectorAll('iframe');
+      for (var j = 0; j < fr.length; j++) {
+        var f = fr[j], src = '';
+        try { src = f.getAttribute('src') || ''; } catch (e) {}
+        if (/youtube(-nocookie)?\.com\/embed/.test(src) && f.contentWindow) ytPauseCmd(f.contentWindow);
+        try { if (f.contentWindow) sweep(f.contentWindow, depth + 1); } catch (e) {}
+      }
+    } catch (e) {}
+  }
+  function tell(key, on) {
+    var T = window.__vpcTrack && window.__vpcTrack[key];
+    if (!T || !T.f || !T.f.contentWindow) return;
+    try { T.f.contentWindow.postMessage({ vpc: 'displaced', on: !!on }, '*'); } catch (e) {}
+    if (on) sweep(T.f.contentWindow, 0);
+  }
+  function tick() {
+    var s = readSnap();
+    if (!s) return;
+    var all = {};
+    if (s.hosts) Object.keys(s.hosts).forEach(function (k) { all[k] = 1; });
+    if (s.split_app) Object.keys(s.split_app).forEach(function (k) { all[k] = 1; });
+    Object.keys(NATIVE_CONTENT).forEach(function (k) { all[k] = 1; });
+    Object.keys(all).forEach(function (key) {
+      var up = faceUp(key, s);
+      var st = keys[key];
+      if (!st) {
+        /* Baseline: a surface that boots face-down (YouTube waiting
+           under Babyboo is the room's own default) is stopped here
+           too — the across-restart twin of his report. */
+        st = keys[key] = { face: up, stopped: !up };
+        if (!up) tell(key, true);
+        return;
+      }
+      if (up === st.face) {
+        /* Re-assert while down: a surface document that finished
+           loading after the first stop still gets it, every tick,
+           until the surface is back on a screen. */
+        if (!up && st.stopped) tell(key, true);
+        return;
+      }
+      st.face = up;
+      if (!up) { st.stopped = true; tell(key, true); }
+      else if (st.stopped) { st.stopped = false; tell(key, false); }
+    });
+  }
+  setInterval(tick, 500);
+  window.__vpcDisplaceState = function () {
+    var out = {};
+    Object.keys(keys).forEach(function (k) { out[k] = { face: keys[k].face, stopped: keys[k].stopped }; });
+    return out;
+  };
+})();

@@ -104,6 +104,7 @@ this screen skips to the next one on its own.</div>
   var queue = [], qIdx = 0, mode = 'queue'; /* 'queue' | 'search' | 'single' */
   var curId = null, skips = 0, searchErrs = 0, lastTerm = '';
   var ytApi = 'idle', ytPlayer = null, stallTimer = null;
+  var displaced = false, dispHold = null;
   var tapPlay = document.getElementById('tapPlay'), note = document.getElementById('note');
   var NOTE_HOME = note.textContent;
 
@@ -251,7 +252,7 @@ this screen skips to the next one on its own.</div>
   window.__vpcYouTubeGo = function(raw){ go(raw); };
   window.__vpcYouTubeState = function(){
     var st = { playing: player.style.display === 'block', src: player.src || '', yt: null, t: null,
-               id: curId, mode: mode, qi: qIdx, qn: queue.length, skips: skips };
+               id: curId, mode: mode, qi: qIdx, qn: queue.length, skips: skips, disp: displaced };
     if (ytPlayer && ytPlayer.getPlayerState){
       try { st.yt = ytPlayer.getPlayerState(); st.t = ytPlayer.getCurrentTime(); } catch (e) {}
     }
@@ -262,7 +263,54 @@ this screen skips to the next one on its own.</div>
      on the projector wall (and leaves with it) */
   window.addEventListener('message', function(e){
     if (e.data && e.data.vpc === 'stage') document.body.classList.toggle('stage', !!e.data.on);
+    if (e.data && e.data.vpc === 'displaced'){
+      if (e.data.on) stopForDisplace(); else restoreFromDisplace();
+    }
   });
+
+  /* ── DISPLACEMENT STOP (his ruling 2026-11-01 ~20:36 CST): when
+     this surface is taken OFF its screen — Babyboo took the mount
+     and the Adele video kept playing in the background — playback
+     stops for real and stays stopped until HE puts YouTube back on
+     a screen. The stop is hard: exact position saved first, the API
+     player paused + destroyed, and the embed UNLOADED, so no buffer
+     or autoplay can keep a hidden video alive. The place is kept
+     (queue/mode/position, here and in the persistence record), and
+     coming back reloads the same video CUED at the saved position —
+     silent until he plays it. ─────────────────────────────────── */
+  function stopForDisplace(){
+    if (displaced) return;
+    var t = 0;
+    if (ytPlayer && ytPlayer.getCurrentTime){ try { t = ytPlayer.getCurrentTime() || 0; } catch (e) {} }
+    saveYt(t);            /* freeze the exact spot before the flag goes up */
+    displaced = true;
+    dispHold = { mode: mode, id: curId, term: lastTerm, t: t };
+    if (stallTimer){ clearTimeout(stallTimer); stallTimer = null; }
+    hideTapPlay();
+    if (ytPlayer && ytPlayer.pauseVideo){ try { ytPlayer.pauseVideo(); } catch (e) {} }
+    if (ytPlayer){ try { ytPlayer.destroy(); } catch (e) {} ytPlayer = null; }
+    try { player.src = 'about:blank'; } catch (e) {}
+    player.style.display = 'none';
+    idle.style.display = 'flex';
+  }
+  function restoreFromDisplace(){
+    if (!displaced) return;
+    displaced = false;
+    var h = dispHold; dispHold = null;
+    if (!h) return;
+    if (h.mode === 'search' && h.term){
+      mode = 'search'; curId = null;
+      player.src = 'https://www.youtube-nocookie.com/embed?listType=search&list=' +
+                   encodeURIComponent(h.term) + '&autoplay=0&rel=0&playsinline=1&enablejsapi=1' + originParam();
+      showPlayer(); hideTapPlay(); rebind();
+      return;
+    }
+    if (h.id){
+      curId = h.id;
+      player.src = embedUrl(h.id, false, h.t || 0);
+      showPlayer(); hideTapPlay(); rebind();
+    }
+  }
 
   /* ── Room persistence (his law; defect filed 2026-11-01): this
      surface keeps its own playback state — the queue, which video,
@@ -271,6 +319,7 @@ this screen skips to the next one on its own.</div>
      playlist has no position to return to). ─────────────────── */
   var YT_KEY = 'vpc_youtube_play';
   function saveYt(freshT){
+    if (displaced) return;   /* position frozen at the displacement save */
     try {
       var st = null, t = (typeof freshT === 'number') ? freshT : 0;
       if (ytPlayer && ytPlayer.getPlayerState){
