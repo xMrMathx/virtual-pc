@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Studio — Premium VibeZ</title>
+<style>
+  :root{
+    --bg:#070a18; --bg2:#0c1130; --panel:#10142b; --panel2:#161b3a; --line:#262c52;
+    --ink:#eef0ff; --mut:#9aa3c7; --gold:#e9c979; --gold2:#b9975b; --red:#ff3b47;
+    --kick:#5aa2ff; --bass:#57d977; --pad:#f59a3d; --vox:#b07fe8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{background:radial-gradient(120% 90% at 50% -10%, #1b2350 0%, var(--bg2) 42%, var(--bg) 100%);
+       color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+       display:flex;flex-direction:column;overflow:hidden;user-select:none;-webkit-user-select:none}
+  /* ---------- top transport bar ---------- */
+  #top{flex:0 0 auto;display:flex;align-items:center;gap:10px;padding:8px 12px;
+       background:linear-gradient(180deg,rgba(20,26,58,.92),rgba(12,16,38,.92));
+       border-bottom:1.5px solid var(--line)}
+  #brand{flex:0 0 auto;line-height:1.05}
+  #brand .wm{font-weight:900;font-size:17px;letter-spacing:2.5px;color:#cfd8ff;
+       text-shadow:0 0 12px rgba(122,92,255,.85),0 0 26px rgba(0,140,255,.5)}
+  #brand .sub{font-size:8.5px;letter-spacing:2.6px;color:var(--gold);font-weight:700}
+  #songName{flex:0 1 auto;min-width:0;font-size:13.5px;font-weight:700;color:var(--ink);
+       background:transparent;border:1px solid transparent;border-radius:8px;padding:5px 8px;outline:none}
+  #songName:focus{border-color:var(--line);background:#0d1130}
+  #songMeta{flex:0 0 auto;color:var(--mut);font-size:11.5px;font-weight:600;white-space:nowrap}
+  .tbtn{flex:0 0 auto;width:38px;height:38px;border-radius:50%;border:1.5px solid var(--line);
+       background:var(--panel2);color:var(--ink);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .tbtn:active{border-color:var(--gold)}
+  .tbtn.on{border-color:var(--gold);color:var(--gold)}
+  #btnRec{width:44px;height:44px;background:radial-gradient(circle at 35% 30%, #ff6b74, var(--red) 60%, #c21725);
+       border-color:#ff8296;color:#fff;box-shadow:0 0 16px rgba(255,59,71,.45)}
+  #btnRec.armed{animation:pulse 1s infinite}
+  #btnRec.rec{animation:pulse .5s infinite;background:radial-gradient(circle at 35% 30%, #fff, var(--red) 55%, #c21725)}
+  @keyframes pulse{0%,100%{box-shadow:0 0 8px rgba(255,59,71,.4)}50%{box-shadow:0 0 22px rgba(255,59,71,.9)}}
+  #clock{flex:0 0 auto;font-variant-numeric:tabular-nums;font-size:16px;font-weight:800;letter-spacing:1px;
+       background:#05070f;border:1.5px solid var(--line);border-radius:9px;padding:6px 10px;color:#aef}
+  #bpmBox{flex:0 0 auto;display:flex;align-items:center;gap:5px;color:var(--mut);font-size:11px;font-weight:700}
+  #bpmBox button{width:24px;height:24px;border-radius:7px;border:1.5px solid var(--line);background:var(--panel2);color:var(--ink);cursor:pointer;font-size:14px}
+  #bpmVal{color:var(--ink);font-size:14px;min-width:30px;text-align:center}
+  #masterBox{flex:0 0 auto;display:flex;align-items:center;gap:7px;margin-left:auto}
+  #masterBox .lb{font-size:9.5px;letter-spacing:1.6px;color:var(--gold);font-weight:800}
+  #master{width:104px;accent-color:var(--gold2)}
+  #masterPct{font-size:11.5px;color:var(--mut);min-width:34px;font-variant-numeric:tabular-nums}
+  .pill{flex:0 0 auto;height:32px;padding:0 12px;border-radius:999px;border:1.5px solid var(--line);
+       background:var(--panel2);color:var(--ink);font-size:12px;font-weight:700;cursor:pointer}
+  .pill:active{border-color:var(--gold)}
+  #btnBrother{border-color:rgba(233,201,121,.55);color:var(--gold)}
+  /* ---------- main split ---------- */
+  #main{flex:1 1 auto;display:flex;min-height:0}
+  /* left rail — track headers (picture: headers at left, volume per track) */
+  #rail{flex:0 0 196px;display:flex;flex-direction:column;background:rgba(10,13,32,.85);
+       border-right:1.5px solid var(--line);min-height:0}
+  #railHead{flex:0 0 26px;border-bottom:1px solid var(--line)}
+  #tracks{flex:1 1 auto;overflow-y:auto;overflow-x:hidden}
+  .trk{height:80px;padding:7px 10px 6px;border-bottom:1px solid #1b2145;cursor:pointer;position:relative}
+  .trk.sel{background:rgba(38,44,82,.5);box-shadow:inset 3px 0 0 var(--gold)}
+  .trk .nm{display:flex;align-items:center;gap:7px;font-size:13.5px;font-weight:700}
+  .trk .nm svg{flex:0 0 auto}
+  .trk .vol{display:flex;align-items:center;gap:7px;margin-top:7px}
+  .trk .vol input{flex:1;accent-color:var(--gold2);height:18px}
+  .trk .vol .pc{font-size:11px;color:var(--mut);min-width:32px;text-align:right;font-variant-numeric:tabular-nums}
+  .trk .ms{position:absolute;top:8px;right:8px;display:flex;gap:4px}
+  .trk .ms button{width:19px;height:19px;border-radius:5px;border:1px solid var(--line);background:#0d1130;
+       color:var(--mut);font-size:9.5px;font-weight:800;cursor:pointer}
+  .trk .ms button.onM{background:#8a6d1f;color:#ffe9a8;border-color:var(--gold2)}
+  .trk .ms button.onS{background:#1f5c8a;color:#aee6ff;border-color:#3d9bd6}
+  .trk .meter{height:4px;border-radius:2px;background:#05070f;margin-top:6px;overflow:hidden}
+  .trk .meter i{display:block;height:100%;width:0;background:linear-gradient(90deg,#3ddc74,#ffd479,#ff5964)}
+  .trk.armed{box-shadow:inset 3px 0 0 var(--red)}
+  #btnAdd{flex:0 0 auto;margin:9px;padding:11px;border-radius:11px;border:1.5px dashed #3a4176;
+       background:transparent;color:#cfd8ff;font-size:13.5px;font-weight:800;cursor:pointer}
+  #btnAdd:active{border-color:var(--gold);color:var(--gold)}
+  /* timeline */
+  #tlWrap{flex:1 1 auto;display:flex;flex-direction:column;min-width:0;min-height:0;position:relative}
+  #ruler{flex:0 0 26px;position:relative;border-bottom:1px solid var(--line);background:rgba(8,10,26,.7);overflow:hidden}
+  #ruler canvas{position:absolute;inset:0}
+  #lanes{flex:1 1 auto;overflow-y:auto;overflow-x:auto;position:relative;background:
+       repeating-linear-gradient(0deg, transparent 0 79px, #1b2145 79px 80px)}
+  #grid{position:relative;min-height:100%}
+  .region{position:absolute;height:70px;top:5px;border-radius:9px;overflow:hidden;cursor:grab;
+       border:1.5px solid rgba(255,255,255,.22);box-shadow:0 3px 10px rgba(0,0,0,.35)}
+  .region.sel{border-color:#fff;box-shadow:0 0 0 2px rgba(255,255,255,.35),0 3px 10px rgba(0,0,0,.4)}
+  .region .rlab{position:absolute;top:3px;left:7px;font-size:10.5px;font-weight:800;color:rgba(255,255,255,.92);
+       text-shadow:0 1px 3px rgba(0,0,0,.6);pointer-events:none;letter-spacing:.3px}
+  .region canvas{position:absolute;inset:0;width:100%;height:100%}
+  .region .edge{position:absolute;top:0;bottom:0;width:11px;cursor:ew-resize;z-index:2}
+  .region .edge.l{left:0}.region .edge.r{right:0}
+  .region.empty{background:repeating-linear-gradient(45deg,rgba(176,127,232,.16) 0 10px,rgba(176,127,232,.05) 10px 20px)!important}
+  #playhead{position:absolute;top:0;bottom:0;width:2px;background:#fff;box-shadow:0 0 8px rgba(255,255,255,.8);z-index:5;pointer-events:none}
+  #countIn{position:absolute;inset:0;display:none;align-items:center;justify-content:center;z-index:8;
+       background:rgba(4,5,14,.55);font-size:110px;font-weight:900;color:#fff;text-shadow:0 0 44px rgba(255,59,71,.8)}
+  /* right panel — LOOPS LIBRARY (the crowned picture's right side) */
+  #lib{flex:0 0 218px;display:flex;flex-direction:column;background:rgba(10,13,32,.88);
+       border-left:1.5px solid var(--line);min-height:0}
+  #lib h4{flex:0 0 auto;padding:11px 12px 7px;font-size:11px;letter-spacing:2.2px;color:#cfd8ff;font-weight:800}
+  #libSearch{margin:0 12px 8px;height:31px;border-radius:8px;border:1.5px solid var(--line);
+       background:#0d1130;color:var(--ink);padding:0 10px;font-size:12.5px;outline:none}
+  #libList{flex:1 1 auto;overflow-y:auto;padding:0 6px 10px}
+  .shelf{margin:8px 6px 3px;font-size:9.5px;letter-spacing:1.8px;color:var(--gold);font-weight:800}
+  .loopRow{display:flex;align-items:center;gap:8px;padding:8px 7px;border-radius:9px;cursor:pointer}
+  .loopRow:active{background:#1a2050}
+  .loopRow .ic{flex:0 0 auto;width:22px;text-align:center;font-size:14px}
+  .loopRow .nm{flex:1;font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .loopRow .du{color:var(--mut);font-size:11px;font-variant-numeric:tabular-nums}
+  /* bottom drawer: strip / pads / mixer */
+  #drawer{flex:0 0 auto;border-top:1.5px solid var(--line);background:rgba(10,13,32,.94)}
+  #drawerTabs{display:flex;gap:6px;padding:7px 10px 0}
+  .dtab{height:28px;padding:0 14px;border-radius:8px 8px 0 0;border:1.5px solid var(--line);border-bottom:none;
+       background:#0d1130;color:var(--mut);font-size:11px;font-weight:800;letter-spacing:1.4px;cursor:pointer}
+  .dtab.on{background:var(--panel2);color:var(--gold)}
+  #drawerBody{height:142px;overflow:hidden;position:relative}
+  .dpane{position:absolute;inset:0;display:none;padding:10px 12px;overflow:auto}
+  .dpane.on{display:block}
+  /* mixer strip */
+  #stripPane .srow{display:flex;flex-wrap:wrap;gap:14px 20px;align-items:flex-start}
+  .ctl{display:flex;flex-direction:column;gap:4px;min-width:86px}
+  .ctl label{font-size:9.5px;letter-spacing:1.5px;color:var(--mut);font-weight:800}
+  .ctl input[type=range]{width:104px;accent-color:var(--gold2)}
+  .ctl .v{font-size:11px;color:var(--ink)}
+  #stripTitle{font-size:13px;font-weight:800;margin-bottom:8px}
+  #stripTitle .tag{color:var(--gold);font-size:10.5px;letter-spacing:1.6px;margin-left:8px}
+  .chips{display:flex;gap:6px;flex-wrap:wrap}
+  .chip{height:27px;padding:0 11px;border-radius:999px;border:1.5px solid var(--line);background:var(--panel2);
+       color:var(--ink);font-size:11.5px;font-weight:700;cursor:pointer}
+  .chip.on{border-color:var(--gold);color:var(--gold)}
+  .chip:active{border-color:var(--gold)}
+  .abtn{height:30px;padding:0 13px;border-radius:9px;border:1.5px solid var(--line);background:var(--panel2);
+       color:var(--ink);font-size:12px;font-weight:700;cursor:pointer}
+  .abtn:active{border-color:var(--gold)}
+  .abtn.red{border-color:rgba(255,59,71,.6);color:#ff9aa4}
+  /* pads */
+  #padGrid{display:grid;grid-template-columns:repeat(8,1fr);gap:7px;height:100%}
+  .pad{border-radius:10px;border:1.5px solid var(--line);background:linear-gradient(180deg,#1a2050,#11142e);
+       color:#cfd8ff;font-size:10px;font-weight:800;letter-spacing:.4px;cursor:pointer;
+       display:flex;align-items:flex-end;padding:6px;min-height:0}
+  .pad.hit{background:linear-gradient(180deg,#ffd479,#b9975b);color:#221a05}
+  /* sequencer */
+  #seqWrap{margin-top:10px}
+  .seqRow{display:flex;align-items:center;gap:4px;margin:3px 0}
+  .seqRow .sl{width:52px;font-size:10px;color:var(--mut);font-weight:800;letter-spacing:.6px}
+  .step{flex:1;height:19px;border-radius:5px;border:1px solid var(--line);background:#0d1130;cursor:pointer}
+  .step.on{background:var(--kick);border-color:#9cc4ff}
+  .step.bar{border-left:2px solid #454e86}
+  .step.now{box-shadow:0 0 0 2px rgba(255,255,255,.65)}
+  /* mixer pane */
+  #mixerPane .mrow{display:flex;gap:16px;overflow-x:auto;height:100%;align-items:stretch;padding-bottom:4px}
+  .mchan{flex:0 0 74px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:7px 4px;
+       border:1.5px solid var(--line);border-radius:10px;background:#0d1130}
+  .mchan .mn{font-size:10px;font-weight:800;letter-spacing:.5px;text-align:center}
+  .mchan input[type=range]{writing-mode:vertical-lr;direction:rtl;height:74px;accent-color:var(--gold2)}
+  .mchan .mv{font-size:10px;color:var(--mut)}
+  /* add-track menu + region menu */
+  .sheet{position:absolute;inset:0;display:none;align-items:flex-end;justify-content:center;z-index:20;
+       background:rgba(3,4,12,.55)}
+  .sheet .box{background:#12162f;border:1.5px solid var(--line);border-radius:16px 16px 0 0;width:100%;
+       max-width:520px;padding:14px 14px 20px;max-height:82%;overflow-y:auto}
+  .sheet h5{font-size:12px;letter-spacing:2px;color:var(--gold);font-weight:800;margin:2px 2px 10px}
+  .opt{display:flex;align-items:center;gap:11px;width:100%;padding:13px 12px;margin:5px 0;border-radius:11px;
+       border:1.5px solid var(--line);background:var(--panel2);color:var(--ink);font-size:14.5px;font-weight:700;cursor:pointer;text-align:left}
+  .opt .d{margin-left:auto;font-size:11px;color:var(--mut);font-weight:600}
+  .opt:active{border-color:var(--gold)}
+  #toast{position:absolute;left:50%;bottom:186px;transform:translateX(-50%);z-index:30;display:none;
+       background:rgba(8,10,24,.95);border:1.5px solid var(--gold2);color:#ffe9a8;border-radius:11px;
+       padding:9px 15px;font-size:12.5px;font-weight:700;max-width:88%;text-align:center}
+  /* ---------- vertical layout ---------- */
+  body.vert #lib{display:none}
+  body.vert #rail{flex-basis:132px}
+  body.vert .trk{height:80px;padding:6px 7px 5px}
+  body.vert .trk .nm{font-size:12px}
+  body.vert #brand .sub{display:none}
+  body.vert #songMeta{display:none}
+  body.vert #master{width:64px}
+  /* ---------- mount mini layout ---------- */
+  body.mini #rail, body.mini #lib, body.mini #tlWrap, body.mini #drawerTabs,
+  body.mini #songName, body.mini #bpmBox, body.mini #btnBrother, body.mini #btnExport{display:none}
+  body.mini #drawerBody{height:auto;flex:1}
+  body.mini #main{flex:0 0 0}
+  body.mini #panePads{display:block}
+  body.mini #miniName{display:flex!important}
+  #miniName{display:none;align-items:center;gap:8px;padding:6px 12px 0;font-size:12.5px;font-weight:800}
+  #miniName .dot{width:9px;height:9px;border-radius:50%;background:#3ddc74;box-shadow:0 0 8px #3ddc74}
+</style>
+</head>
+<body class="wide">
+  <!-- top bar -->
+  <div id="top">
+    <div id="brand"><div class="wm">THE STUDIO</div><div class="sub">PREMIUM VIBEZ</div></div>
+    <input id="songName" value="Untitled Project" spellcheck="false">
+    <div id="songMeta">95 BPM · C MINOR</div>
+    <button class="tbtn" id="btnRew" title="Back to start">⏮</button>
+    <button class="tbtn" id="btnPlay" title="Play">▶</button>
+    <button class="tbtn" id="btnRec" title="Record">●</button>
+    <div id="clock">0:00:00:00</div>
+    <div id="bpmBox"><button id="bpmDn">−</button><span id="bpmVal">95</span><button id="bpmUp">+</button><span>BPM</span></div>
+    <div id="masterBox"><span class="lb">MASTER</span><input type="range" id="master" min="0" max="100" value="100"><span id="masterPct">100%</span></div>
+    <button class="pill" id="btnBrother">🎥 BROTHER</button>
+    <button class="pill" id="btnExport">EXPORT</button>
+  </div>
+
+  <div id="miniName"><span class="dot"></span><span id="miniSong">Untitled Project</span><span style="color:var(--mut);font-weight:600">· mini studio — full project, same song</span></div>
+
+  <!-- main -->
+  <div id="main">
+    <div id="rail">
+      <div id="railHead"></div>
+      <div id="tracks"></div>
+      <button id="btnAdd">+ Add Track</button>
+    </div>
+    <div id="tlWrap">
+      <div id="ruler"><canvas id="rulerCv"></canvas></div>
+      <div id="lanes"><div id="grid"><div id="playhead" style="left:0"></div></div></div>
+      <div id="countIn"></div>
+    </div>
+    <div id="lib">
+      <h4>LOOPS LIBRARY</h4>
+      <input id="libSearch" placeholder="Search loops…" autocomplete="off">
+      <div id="libList"></div>
+    </div>
+  </div>
+
+  <!-- drawer -->
+  <div id="drawer">
+    <div id="drawerTabs">
+      <button class="dtab on" data-pane="paneStrip">TRACK</button>
+      <button class="dtab" data-pane="panePads">PADS</button>
+      <button class="dtab" data-pane="paneMixer">MIXER</button>
+      <button class="dtab" data-pane="paneLoops">LOOPS</button>
+    </div>
+    <div id="drawerBody">
+      <div class="dpane on" id="paneStrip"></div>
+      <div class="dpane" id="panePads">
+        <div id="padGrid"></div>
+        <div id="seqWrap"></div>
+      </div>
+      <div class="dpane" id="paneMixer"></div>
+      <div class="dpane" id="paneLoops"></div>
+    </div>
+  </div>
+
+  <!-- sheets -->
+  <div class="sheet" id="addSheet"><div class="box"><h5>ADD A TRACK</h5><div id="addOpts"></div></div></div>
+  <div class="sheet" id="regSheet"><div class="box"><h5 id="regTitle">BLOCK</h5><div id="regOpts"></div></div></div>
+  <div class="sheet" id="expSheet"><div class="box"><h5>MAKE IT A SONG FILE</h5><div id="expOpts"></div></div></div>
+  <div id="toast"></div>
+
+<script src="studio.js"></script>
+</body>
+</html>
