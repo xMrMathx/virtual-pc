@@ -104,6 +104,24 @@ this screen skips to the next one on its own.</div>
   var queue = [], qIdx = 0, mode = 'queue'; /* 'queue' | 'search' | 'single' */
   var curId = null, skips = 0, searchErrs = 0, lastTerm = '';
   var ytApi = 'idle', ytPlayer = null, stallTimer = null;
+  /* MASTER + PER-SCREEN VOLUME (hub contract; restored with the
+     tablet ship, 2026-11-01): the gain the top window's hub
+     delivers to this window IS this screen's effective volume
+     (master x the screen's own slider), applied to the YouTube API
+     player on ready and on every play state so a video starting
+     later still starts at the right level. */
+  function masterVolNow(){
+    var v = (typeof window.__vpcMasterVol === 'number') ? window.__vpcMasterVol : 1;
+    return Math.max(0, Math.min(1, v));
+  }
+  function applyMasterVol(){
+    if (ytPlayer && ytPlayer.setVolume){ try { ytPlayer.setVolume(Math.round(masterVolNow() * 100)); } catch (e) {} }
+  }
+  window.__vpcApplyMasterVol = applyMasterVol;
+  window.addEventListener('message', function(e){
+    var d = e && e.data;
+    if (d && d.type === 'vpc-mastervol'){ window.__vpcMasterVol = d.vol; applyMasterVol(); }
+  });
   var displaced = false, dispHold = null;
   var tapPlay = document.getElementById('tapPlay'), note = document.getElementById('note');
   var NOTE_HOME = note.textContent;
@@ -211,8 +229,9 @@ this screen skips to the next one on its own.</div>
     if (ytPlayer) return;
     try {
       ytPlayer = new YT.Player('player', { events: {
+        'onReady': function(){ applyMasterVol(); },
         'onStateChange': function(e){
-          if (e.data === 1){ hideTapPlay(); skips = 0; searchErrs = 0; if (note.textContent !== NOTE_HOME && mode !== 'queue') {} }
+          if (e.data === 1){ hideTapPlay(); applyMasterVol(); skips = 0; searchErrs = 0; if (note.textContent !== NOTE_HOME && mode !== 'queue') {} }
           if (e.data === 0 && mode === 'queue' && qIdx + 1 < queue.length && skips === 0){
             /* a lane pick ended: roll into the lane's next verified pick */
             qIdx++; loadCurrent(true);

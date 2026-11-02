@@ -376,5 +376,38 @@
   });
 })();
 </script>
+<script>
+/* MASTER + PER-SCREEN VOLUME (hub contract; restored with the
+   tablet ship, 2026-11-01): the gain the top window's hub delivers
+   to this window IS this screen's effective volume (master x the
+   screen's own slider). Govern every media element this page can
+   reach — its own document and same-origin frames — on change and
+   as new media appears, so a video starting later starts at the
+   right level. The storefront's services themselves are full-view
+   trips (they leave the PC), so their audio is the phone's once
+   he is inside them. */
+(function(){
+  function vol(){ var x = window.__vpcMasterVol; return (typeof x === 'number') ? x : 1; }
+  function sweep(root){
+    try {
+      var ms = root.querySelectorAll('video, audio');
+      for (var i = 0; i < ms.length; i++){ try { ms[i].volume = vol(); } catch (e) {} }
+      var fs = root.querySelectorAll('iframe');
+      for (var j = 0; j < fs.length; j++){ try { if (fs[j].contentDocument) sweep(fs[j].contentDocument); } catch (e) {} }
+    } catch (e) {}
+  }
+  window.__vpcApplyMasterVol = function(){ sweep(document); };
+  window.addEventListener('message', function(e){
+    var d = e && e.data;
+    if (d && d.type === 'vpc-mastervol'){ window.__vpcMasterVol = d.vol; sweep(document); }
+  });
+  var t = null;
+  new MutationObserver(function(){
+    if (t) return;
+    t = setTimeout(function(){ t = null; sweep(document); }, 700);
+  }).observe(document.documentElement, { childList: true, subtree: true });
+  sweep(document);
+})();
+</script>
 </body>
 </html>

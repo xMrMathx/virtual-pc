@@ -470,11 +470,34 @@
     try { speakFn(text); } catch (e) { clearInterval(iv); finish(false); }
     return wait;
   }
+  /* CHATTER VOLUME (his order, 2026-11-01 ~22:21 CST): a dedicated
+     level for THIS conversation — the board voices only. Turning it
+     down makes the agents background; it never stops, holds, or
+     drops a line. The level lives in the tools.js hub
+     (window.__vpcChatterVol, persisted page-side). Native lines
+     pass it to the shell as a second argument; a shell that
+     predates the volume argument throws on the call, which is
+     remembered once and the line retried plain in the same breath
+     (the APK follow-up adds the accepting overload — until then a
+     supporting shell obeys, an old shell speaks at full, and no
+     line is ever lost to the probe). Synth lines fold the level
+     into the utterance volume together with the master gain. */
+  function chatterVol() {
+    var v = (typeof window.__vpcChatterVol === 'number') ? window.__vpcChatterVol : 1;
+    return Math.max(0, Math.min(1, v));
+  }
+  var nativeVolOk = null;   /* null = unprobed; false = shell takes no volume arg */
+  function bridgeSpeak(a, fn, text) {
+    var vol = chatterVol();
+    if (nativeVolOk === false || vol >= 0.999) { a[fn](text); return; }
+    try { a[fn](text, vol); nativeVolOk = true; }
+    catch (e) { nativeVolOk = false; a[fn](text); }
+  }
   function speakNative(text, done) {
     var a = shell();
     if (!a) { done(false); return; }
     var arriveMs = -1;
-    S.nativeWait = speakViaMailbox('__vpcMuseNativeSay', function (t) { a.speak(t); }, text, function (res) {
+    S.nativeWait = speakViaMailbox('__vpcMuseNativeSay', function (t) { bridgeSpeak(a, 'speak', t); }, text, function (res) {
       /* A completion that ARRIVED faster than speech can physically
          happen is a fake speakdone — a dead channel unblocking the
          queue without a sound (a failed TTS init emits one, and so
@@ -512,7 +535,7 @@
   function speakNativeBaby(text, done) {
     var a = shellBaby();
     if (!a) { done(false); return; }
-    S.nativeWait = speakViaMailbox('__vpcBabyNativeSay', function (t) { a.speakBaby(t); }, text, done);
+    S.nativeWait = speakViaMailbox('__vpcBabyNativeSay', function (t) { bridgeSpeak(a, 'speakBaby', t); }, text, done);
   }
   function speakSynth(text, opts, done) {
     if (!window.speechSynthesis) { done(false); return; }
@@ -527,6 +550,13 @@
     var u;
     try { u = new SpeechSynthesisUtterance(text); } catch (e) { finish(false); return; }
     u.lang = 'en-US';
+    /* Board voices ride the master gain folded with the CHATTER
+       level: the master sets the room, the chatter slider sets how
+       far back this conversation sits in it. */
+    try {
+      var mv = (typeof window.__vpcMasterVol === 'number') ? window.__vpcMasterVol : 1;
+      u.volume = Math.max(0, Math.min(1, mv * chatterVol()));
+    } catch (e) {}
     if (opts.voice) u.voice = opts.voice;
     if (opts.rate) u.rate = opts.rate;
     if (opts.pitch) u.pitch = opts.pitch;

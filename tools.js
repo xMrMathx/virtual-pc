@@ -1186,3 +1186,142 @@
     return out;
   };
 })();
+
+/* ---- MASTER VOLUME + PER-SCREEN VOLUME + BOARD CHATTER (his
+   orders: master 2026-11-01 ~18:36 CST — "a master volume button
+   too, so we can change the volume to every single screen";
+   per-screen + chatter ~22:21 CST — "a volume for each screen
+   individually, alongside the master" and a dedicated slider for
+   the board conversation that makes the agents BACKGROUND without
+   ever stopping them). One hub on the top window owns all three:
+   - MASTER: window.__vpcMasterVol is the EFFECTIVE master gain
+     (0 while muted), __vpcSetMasterVol / __vpcSetMasterMuted /
+     __vpcMasterState, 'vpc-mastervol' event — the standing contract
+     every surface already obeys.
+   - PER-SCREEN: each surface's iframe receives master x the volume
+     of the SCREEN IT SITS ON, delivered through the same three
+     channels (direct var, postMessage, __vpcApplyMasterVol), so no
+     surface code changes: a surface's own __vpcMasterVol simply
+     becomes its effective gain. Which screen a surface sits on
+     comes from the engine's own tablet state (each slot names the
+     surfaces it hosts by track key); the engine's
+     layout snapshot persists the per-screen values WITH the
+     arrangement, and the console's sliders set them through
+     __vpcSetSlotVol (instant) + the engine cmd (record). This hub
+     also caches them in localStorage ('vpc_slot_vols') so a fresh
+     page paints surfaces at the right gains before the engine's
+     first state push; the engine's values are adopted whenever
+     they change (a restore is a change like any other).
+   - CHATTER: window.__vpcChatterVol is the board conversation's
+     own level (boardspeak.js reads it per utterance — native lines
+     pass it to the shell, synth lines fold it into the utterance
+     volume). __vpcSetChatterVol / __vpcChatterState /
+     'vpc-chattervol' event; persisted ('vpc_chatter_vol'). It
+     scales the agents' voices ONLY — never the conversation.
+   Master mute remembers the prior level and unmute restores it. */
+(function () {
+  'use strict';
+  if (window.__vpcMasterVolHub) return;
+  window.__vpcMasterVolHub = true;
+  function clamp(v) { v = parseFloat(v); if (isNaN(v)) v = 1; return Math.max(0, Math.min(1, v)); }
+  var vol = 1, muted = false, prior = 1;
+  var slotVols = {};
+  var chatter = 1;
+  try {
+    var sv = localStorage.getItem('vpc_master_vol'); if (sv !== null && sv !== '') vol = clamp(sv);
+    muted = localStorage.getItem('vpc_master_muted') === '1';
+    var sp = localStorage.getItem('vpc_master_prior'); if (sp !== null && sp !== '') prior = clamp(sp);
+    var ss = localStorage.getItem('vpc_slot_vols');
+    if (ss) { var pj = JSON.parse(ss); if (pj && typeof pj === 'object') for (var pk in pj) slotVols[pk] = clamp(pj[pk]); }
+    var sc2 = localStorage.getItem('vpc_chatter_vol'); if (sc2 !== null && sc2 !== '') chatter = clamp(sc2);
+  } catch (e) {}
+  function eff() { return muted ? 0 : vol; }
+  function persist() {
+    try {
+      localStorage.setItem('vpc_master_vol', String(vol));
+      localStorage.setItem('vpc_master_muted', muted ? '1' : '0');
+      localStorage.setItem('vpc_master_prior', String(prior));
+      localStorage.setItem('vpc_slot_vols', JSON.stringify(slotVols));
+      localStorage.setItem('vpc_chatter_vol', String(chatter));
+    } catch (e) {}
+  }
+  /* The engine's tablet state names, for every slot, the surfaces
+     on it (by track key) and that screen's volume: build the
+     surface->slot map, and adopt the engine's volume for a slot
+     only when the engine's value CHANGES (a restore, another
+     console's command) or is first seen. Adopting continuously
+     would erase a local set in the same push that applies it —
+     the engine learns of a console set a poll later, and until
+     then its payload still carries the old value. A slot whose
+     console slider is being dragged is never adopted over. */
+  var engSeen = {};
+  function readEngine() {
+    var map = {};
+    try {
+      var st = window.__vpcTabletState;
+      if (st && st.slots) for (var i = 0; i < st.slots.length; i++) {
+        var s = st.slots[i];
+        var keys = (s.tracks && s.tracks.length) ? s.tracks : [s.content];
+        for (var j = 0; j < keys.length; j++) map[keys[j]] = s.id;
+        if (typeof s.vol === 'number' && engSeen[s.id] !== s.vol) {
+          engSeen[s.id] = s.vol;
+          if (window.__vpcSlotVolHold !== s.id) slotVols[s.id] = clamp(s.vol);
+        }
+      }
+    } catch (e) {}
+    return map;
+  }
+  function gainFor(key, map) {
+    var slot = map[key];
+    var f = (slot && typeof slotVols[slot] === 'number') ? slotVols[slot] : 1;
+    return eff() * f;
+  }
+  function push() {
+    window.__vpcMasterVol = eff();
+    window.__vpcMasterMuted = muted;
+    window.__vpcChatterVol = chatter;
+    try { window.dispatchEvent(new CustomEvent('vpc-mastervol', { detail: { vol: eff(), muted: muted } })); } catch (e) {}
+    var map = readEngine();
+    var T = window.__vpcTrack || {};
+    for (var k in T) {
+      var f = T[k] && T[k].f;
+      if (f && f.contentWindow) {
+        var g = gainFor(k, map);
+        try { f.contentWindow.__vpcMasterVol = g; } catch (e) {}
+        try { f.contentWindow.postMessage({ type: 'vpc-mastervol', vol: g, muted: muted }, '*'); } catch (e) {}
+        try { if (f.contentWindow.__vpcApplyMasterVol) f.contentWindow.__vpcApplyMasterVol(); } catch (e) {}
+      }
+    }
+  }
+  window.__vpcSetMasterVol = function (v) { vol = clamp(v); if (vol > 0) muted = false; persist(); push(); };
+  window.__vpcSetMasterMuted = function (m) {
+    if (m && !muted) { prior = vol; muted = true; }
+    else if (!m && muted) { muted = false; vol = prior > 0 ? prior : 1; }
+    persist(); push();
+  };
+  window.__vpcSetSlotVol = function (slot, v) { if (!slot) return; slotVols[slot] = clamp(v); persist(); push(); };
+  window.__vpcSlotVol = function (slot) { return (typeof slotVols[slot] === 'number') ? slotVols[slot] : 1; };
+  window.__vpcSetChatterVol = function (v) {
+    chatter = clamp(v);
+    window.__vpcChatterVol = chatter;
+    persist();
+    try { window.dispatchEvent(new CustomEvent('vpc-chattervol', { detail: { vol: chatter } })); } catch (e) {}
+  };
+  window.__vpcChatterState = function () { return { vol: chatter }; };
+  window.__vpcMasterState = function () { return { vol: vol, muted: muted, eff: eff(), prior: prior, slots: slotVols, chatter: chatter }; };
+  push();
+  setInterval(push, 2000);
+})();
+
+/* ---- THE TABLET: load the arrangement console (tablet.js) beside
+   this file. Guarded like every block above; the console owns its
+   state on window.__vpcTabletUi and opens on the engine's
+   __vpcTabletPop (the camera-pop pattern). ---- */
+(function () {
+  'use strict';
+  if (window.__vpcTabletLoad) return;
+  window.__vpcTabletLoad = true;
+  var sc = document.createElement('script');
+  sc.src = 'tablet.js';
+  document.head.appendChild(sc);
+})();
