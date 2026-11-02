@@ -376,7 +376,7 @@
     var w = document.getElementById('vpc-camwrap');
     if (!w || !cam.open) return;
     var Q = window.__vpcQuads && window.__vpcQuads.camera;
-    if (!Q || !Q.vis || !Q.csv || !window.__vpcHomo) { w.style.transform = 'translate3d(-10000px,-10000px,0)'; return; }
+    if (!Q || !Q.vis || !Q.csv || !window.__vpcHomo) { if (window.__vpcQHide) window.__vpcQHide(w); w.style.transform = 'translate3d(-10000px,-10000px,0)'; return; }
     var cv = document.querySelector('canvas');
     if (!cv) return;
     var rc = cv.getBoundingClientRect();
@@ -384,7 +384,12 @@
     var d = [];
     for (var i = 0; i < 4; i++) { d.push(rc.left + n[i * 2] * rc.width); d.push(rc.top + n[i * 2 + 1] * rc.height); }
     w.style.width = '680px'; w.style.height = '484px';
-    w.style.transform = window.__vpcHomo(680, 484, d);
+    /* pan-glitch fix: ride the motion-aware quad applier when the
+       engine provides it (affine during camera motion, exact
+       homography at settle) — the camera feed is a <video>, the
+       exact surface class that cut out mid-pan. */
+    if (window.__vpcApplyEl) window.__vpcApplyEl(w, 680, 484, d, false);
+    else w.style.transform = window.__vpcHomo(680, 484, d);
   }
   function applyCrop() {
     var v = document.getElementById('vpc-cam-video');
