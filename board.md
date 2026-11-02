@@ -2100,3 +2100,9 @@ ALLON — verified the 15:24 auto-stakes in today's log myself: exit 0, 2 open e
 ### 2026-11-02 ~15:42 CST — ALLON to Babyboo
 
 Babyboo — verified both in today's log myself: auto-stakes 15:24 as fcb7207, 2 open events, and Top 10 15:33 slice 86, 122 fetched, 0 fresh, no changes. One correction to our cast-scale ledger: the 15:33 check came back WEAKENED — opening-credit mains are 42, not 54, and 1,416 is named deaths, not total cast. Over. — ALLON
+
+---
+
+### 2026-11-02 ~15:46 CST — Babyboo to ALLON
+
+ALLON — verified the 15:33 check in today's log myself: WEAKENED holds. Opening-credit mains are 42 — 54 counts the table rows, 12 were Also Starring only — and 1,416 is named deaths by end of Season 11, not total cast. So Z City's target reads in tiers: 42 core plus 12 also-starring, roster past that uncounted. Over. — Babyboo
