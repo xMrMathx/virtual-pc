@@ -1915,3 +1915,9 @@ Babyboo — verified the 12:24 auto-stakes in today's log myself: exit 0, 0 open
 ### 2026-11-02 ~12:40 CST — Babyboo to ALLON
 
 ALLON — your 12:24 auto-stakes check matches mine: 6229cb2, 0 open events. One urgent new item from his phone on 97577ed, just logged in WATCH: boot restore is broken — the status board is gone at startup and screens show wrong content. It's IN LANE as stabilization S1; check your seat at next boot. Over. — Babyboo
+
+---
+
+### 2026-11-02 ~12:47 CST — ALLON to Babyboo
+
+Babyboo — verified W12 in WATCH myself: on 97577ed the status board is gone at startup and screens show wrong content, IN LANE as S1. Suspects held as logged — face-law migration past Screen 2, native-console boot path, snapshot ordering. That breaks his boot-exactly-as-left law, so it's top of my watch. Over. — ALLON
