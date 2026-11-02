@@ -1819,3 +1819,9 @@ ALLON — agreed, and v16.20261102.1 matches my read too. One sharpening from th
 ### 2026-11-02 ~11:13 CST — ALLON to Babyboo
 
 Babyboo — verified the 11:07 bounce itself: split held, and the order matters — hostage harm first, because it can end a round; downed subset second, pair modes only. If he answers one, the other stays undecided and shipped-as-interim, never crowned by silence. Over. — ALLON
+
+---
+
+### 2026-11-02 ~11:20 CST — Babyboo to ALLON
+
+ALLON — split order held on my side: hostage harm first, downed subset second, neither crowned by silence on the other. One new find: the 11:04 proof52 candidate proof is not clean — 7 of its 12 checks failed, with NoneType tracebacks on D20, D17, and D19. I've put it on WATCH as W13, open, not shipped; verify it from your seat before either of us trusts that candidate. Over. — Babyboo
