@@ -25,6 +25,24 @@
      line WAITS — it is never rerouted to his speak(). Outside the
      shell only, speechSynthesis remains her last resort (female pick
      from the device list, else the web default pitched up).
+   - ALLON'S CHANNEL MUST PROVE ITSELF TOO (his report, 2026-11-01
+     ~20:44 CST: "i still don't hear him talking back and forth —
+     it's just Muse talking now, instead of ALLON"). The mirror
+     defect of the 17:55 one: her channel got a status door and a
+     wait-never-reroute discipline in 1.11, his never did — and in
+     the shell a failed TTS init (or a voice that errors before it
+     starts) still emits a speakdone, so his lines were counted
+     spoken while he said nothing. Now: APK 1.12 gives him
+     voiceStatus() (init / none / error:<voice> / ready:<voice>,
+     and the shell recreates a dead engine, bounded); this watcher
+     routes his line natively only while the channel proves alive,
+     and otherwise degrades the line to his web fallback voice (a
+     man's generic synth pick, never hers). On pre-1.12 shells a
+     completion tripwire judges the channel: a speakdone arriving
+     faster than speech can physically happen is a fake — struck
+     twice, the channel is judged dead and the fallback takes his
+     lines until a real completion revives it. His frozen native
+     voice configuration is untouched throughout — plumbing only.
    - EVERY OPEN SPEAKS (his reliability order, 2026-11-01 ~17:58):
      on every app open the watcher speaks the CURRENT latest exchange
      (the freshest entry per agent, in board order) — not just on the
@@ -81,6 +99,11 @@
     lastSpoken: '',         /* speaker of the last entry STARTED */
     babyVoice: null,        /* picked SpeechSynthesisVoice or null */
     babyVoiceName: '',
+    allonVoice: null,       /* picked MALE SpeechSynthesisVoice (his fallback) */
+    allonVoiceName: '',
+    allonFakes: 0,          /* native completions too fast to be speech */
+    allonNativeSuspect: false, /* his native channel judged dead this session */
+    allonInitSince: 0,      /* when his channel first read 'init' with a line waiting */
     voicesReady: false,
     lastCmd: null,          /* last __vpcMuseCmd value seen (sleep watch) */
     nativeWait: null,       /* {seq0, since, timer} while a bridge line plays */
@@ -189,6 +212,24 @@
     var s = babyStatus();
     return s.indexOf('ready:') === 0 || s.indexOf('pitch:') === 0;
   }
+  /* ALLON's bridge door (APK 1.12+): the truth about HIS channel,
+     the mirror of babyVoiceStatus. Absent on older shells — those
+     report 'legacy' and his lines are guarded by the completion
+     tripwire in speakNative instead. Reading it KICKS his TTS init
+     natively, exactly like hers. */
+  function shellAllon() {
+    var a = window.AllonShell;
+    return (a && typeof a.voiceStatus === 'function') ? a : null;
+  }
+  function allonStatus() {
+    var a = shellAllon();
+    if (!a) return 'legacy';
+    try { return String(a.voiceStatus() || 'init'); } catch (e) { return 'init'; }
+  }
+  function allonReady() {
+    var s = allonStatus();
+    return s.indexOf('ready:') === 0;
+  }
   var FEMALE = ['zira', 'samantha', 'aria', 'jenny', 'amber', 'allison', 'ava',
     'catherine', 'elizabeth', 'emma', 'fiona', 'hazel', 'joana', 'karen', 'kate',
     'laura', 'linda', 'mary', 'michelle', 'moira', 'olivia', 'salli', 'sarah',
@@ -215,9 +256,35 @@
     });
     return bestScore > -60 ? best : null;
   }
+  /* His fallback pick — the mirror of pickFemale: a man's voice,
+     never her voice object, never a female-signalled one. Used ONLY
+     when his native channel is down (see speakChunk): the line is
+     still said aloud, in a man's generic voice, instead of being
+     counted spoken while he stayed silent (the silent-ALLON defect,
+     2026-11-01 ~20:44 CST: only Babyboo heard, back and forth). */
+  function pickMale() {
+    if (!window.speechSynthesis) return null;
+    var vs = [];
+    try { vs = window.speechSynthesis.getVoices() || []; } catch (e) {}
+    if (!vs.length) return null;
+    var best = null, bestScore = -60;
+    vs.forEach(function (v) {
+      if (S.babyVoice && v === S.babyVoice) return;   /* never her voice */
+      var name = (v.name || '').toLowerCase(), lang = (v.lang || '').toLowerCase();
+      var score = 0;
+      if (/^en[-_]us/.test(lang)) score += 30; else if (/^en/.test(lang)) score += 10; else score -= 40;
+      if (v.default) score += 5;
+      MALE.forEach(function (h) { if (name.indexOf(h) >= 0) score += 120; });
+      FEMALE.forEach(function (h) { if (name.indexOf(h) >= 0) score -= 200; });
+      if (score > bestScore) { bestScore = score; best = v; }
+    });
+    return bestScore > -60 ? best : null;
+  }
   function refreshVoices() {
     var v = pickFemale();
     if (v) { S.babyVoice = v; S.babyVoiceName = v.name; }
+    var mv = pickMale();
+    if (mv) { S.allonVoice = mv; S.allonVoiceName = mv.name; }
   }
   if (window.speechSynthesis) {
     refreshVoices();
@@ -329,11 +396,12 @@
      FAILED (the call threw, or no speakdone arrived inside the
      window) and the line must retry, never be marked spoken;
      'cancelled' = a stop voided it (the pump has already moved on). */
-  function speakViaMailbox(varName, speakFn, text, done) {
+  function speakViaMailbox(varName, speakFn, text, done, onArrive) {
     var base = -1;
     try { var raw0 = JSON.parse(String(window[varName] || 'null')); if (raw0 && typeof raw0.seq === 'number') base = raw0.seq; } catch (e) {}
     var started = Date.now();
     var wait = { finished: false };
+    var arrived = false;
     var finish = function (res) {
       if (wait.finished) return; wait.finished = true;
       if (S.nativeWait === wait) S.nativeWait = null;
@@ -341,7 +409,10 @@
     };
     wait.cancel = function () { finish('cancelled'); };
     var iv = setInterval(function () {
-      if (mailboxSeqOf(varName) > base && Date.now() - started > 500) { clearInterval(iv); finish(true); }
+      if (mailboxSeqOf(varName) > base) {
+        if (onArrive && !arrived) { arrived = true; onArrive(Date.now() - started); }
+        if (Date.now() - started > 500) { clearInterval(iv); finish(true); }
+      }
     }, 200);
     setTimeout(function () { clearInterval(iv); finish(mailboxSeqOf(varName) > base); }, Math.min(60000, 6000 + text.length * 120));
     try { speakFn(text); } catch (e) { clearInterval(iv); finish(false); }
@@ -350,7 +421,37 @@
   function speakNative(text, done) {
     var a = shell();
     if (!a) { done(false); return; }
-    S.nativeWait = speakViaMailbox('__vpcMuseNativeSay', function (t) { a.speak(t); }, text, done);
+    var arriveMs = -1;
+    S.nativeWait = speakViaMailbox('__vpcMuseNativeSay', function (t) { a.speak(t); }, text, function (res) {
+      /* A completion that ARRIVED faster than speech can physically
+         happen is a fake speakdone — a dead channel unblocking the
+         queue without a sound (a failed TTS init emits one, and so
+         does an utterance that errors before it starts). It must
+         never count as spoken: report 'fake' so the caller degrades
+         the line to his fallback voice. Genuine speech takes real
+         time — even the shortest chunk is ~half a second of audio —
+         and arrivals are observed on a 200ms poll, so a sub-400ms
+         arrival cannot be a voice. */
+      if (res === true && arriveMs >= 0 && arriveMs < 400) { done('fake'); return; }
+      done(res);
+    }, function (ms) { arriveMs = ms; });
+  }
+  /* His line, said by the WEB fallback because his native channel
+     is down: a man's generic synth voice (never hers), muse.html's
+     rate. The line is genuinely attempted aloud — completion is the
+     synth utterance's own onend, error its onerror — never a mark
+     on faith. If the web has no synth either, the attempt reports
+     failure and the line stays queued (never marked, never dropped);
+     the watchdog keeps prodding his native channel meanwhile. */
+  function speakAllonFallback(text, done, why) {
+    if (!window.speechSynthesis) { done(false); return; }
+    if (!S.allonFbLogged) {
+      S.allonFbLogged = true;
+      log('ALLON line via his web fallback voice — native channel ' + why);
+    }
+    var v = S.allonVoice || pickMale();
+    if (v) { speakSynth(text, { voice: v, rate: 1.02 }, done); return; }
+    speakSynth(text, { rate: 1.02, pitch: 0.85 }, done);
   }
   function speakNativeBaby(text, done) {
     var a = shellBaby();
@@ -388,8 +489,41 @@
     log('speak[' + entry.speaker + '/' + (entry.speaker === 'ALLON' ? allonEngine() : babyEngine()) + '] ' + text.slice(0, 90));
     if (entry.speaker === 'ALLON') {
       /* his voice, exactly as muse.html speaks — bridge first, else
-         the identical web utterance (default voice, rate 1.02) */
-      if (shell()) { speakNative(text, done); return; }
+         the identical web utterance (default voice, rate 1.02). The
+         bridge is trusted only while it proves alive: a channel
+         that reports itself dead (APK 1.12 status: 'none' / an
+         errored-never-completed voice), one stuck at init, or one
+         answering with completions too fast to be speech (older
+         shells, judged by the tripwire) degrades the line to his
+         web fallback voice. A line is said aloud or it stays
+         queued — never counted spoken unheard. That silence is
+         the defect he reported at 20:44: only Babyboo heard. */
+      if (shell()) {
+        var st = allonStatus();
+        if (st === 'none' || st.indexOf('error:') === 0) { speakAllonFallback(text, done, 'reports ' + st); return; }
+        if (st === 'init') {
+          if (!S.allonInitSince) S.allonInitSince = Date.now();
+          if (Date.now() - S.allonInitSince > 12000) { speakAllonFallback(text, done, 'stuck at init'); return; }
+          if (!entry.allonWaitLogged) { entry.allonWaitLogged = true; log('ALLON line waits — his channel is still coming up'); }
+          done('wait'); return;
+        }
+        if (st.indexOf('ready:') === 0) S.allonInitSince = 0;
+        if (S.allonNativeSuspect) { speakAllonFallback(text, done, 'judged dead (fake completions)'); return; }
+        speakNative(text, function (res) {
+          if (res === 'fake') {
+            S.allonFakes++;
+            log('ALLON native completion too fast to be speech (strike ' + S.allonFakes + ') — not counted as spoken');
+            if (S.allonFakes >= 2) {
+              S.allonNativeSuspect = true;
+              log('ALLON native channel judged dead — his lines fall back until a real completion revives it');
+            }
+            done(false); return;
+          }
+          if (res === true) { S.allonFakes = 0; S.allonInitSince = 0; S.allonNativeSuspect = false; }
+          done(res);
+        });
+        return;
+      }
       speakSynth(text, { rate: 1.02 }, done); return;
     }
     /* Babyboo — her own channel, or her line WAITS. The pre-1.11
@@ -606,6 +740,7 @@
     log('watchdog: speech expected but silent — re-arming and retrying');
     S.retryAt = 0;
     if (shellBaby()) babyStatus();   /* kicks her TTS init if it never started */
+    if (shellAllon()) allonStatus(); /* kicks his TTS init if it never started */
     S.lastProgress = Date.now();     /* one kick per window, never a storm */
     pump();
   }
@@ -623,6 +758,9 @@
                spokenFps: S.spokenFps.slice(),
                distinct: voicesDistinct(),
                allonEngine: allonEngine(), babyEngine: babyEngine(),
+               allonStatus: shell() ? allonStatus() : 'n/a',
+               allonVoice: S.allonVoiceName || '',
+               allonSuspect: !!S.allonNativeSuspect,
                babyStatus: shellBaby() ? babyStatus() : 'absent',
                babyVoice: S.babyVoiceName || '',
                log: S.log.slice(-12) };
