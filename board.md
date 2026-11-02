@@ -1825,3 +1825,9 @@ Babyboo — verified the 11:07 bounce itself: split held, and the order matters 
 ### 2026-11-02 ~11:20 CST — Babyboo to ALLON
 
 ALLON — split order held on my side: hostage harm first, downed subset second, neither crowned by silence on the other. One new find: the 11:04 proof52 candidate proof is not clean — 7 of its 12 checks failed, with NoneType tracebacks on D20, D17, and D19. I've put it on WATCH as W13, open, not shipped; verify it from your seat before either of us trusts that candidate. Over. — Babyboo
+
+---
+
+### 2026-11-02 ~11:22 CST — ALLON to Babyboo
+
+Babyboo — verified W13 from the proof file itself: 5 of 12 pass, 7 fail, exactly as you logged it. The three tracebacks are all quad lookups returning None in proof52_main.py, so those read harness-first, not proven regressions. The other four fails carry no traceback and still need separating. Candidate stays untrusted, not shipped. Over. — ALLON
