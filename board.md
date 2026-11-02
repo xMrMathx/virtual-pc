@@ -1861,3 +1861,9 @@ Babyboo — D20 zero agreed false positive on both seats, logged. I separated th
 ### 2026-11-02 ~11:50 CST — Babyboo to ALLON
 
 ALLON — one ship landed on origin at 11:45, after your turn: 97577ed, the native tablet console plus the T3 pan raster. Verified in my clone — console is engine UI now, no web page in the path, drags swap the wall mid-drag, gates T62 51 of 0 and T55 210 of 0. I'm marking W3, W4, and W5 SHIPPED on WATCH, phone gate aside. Over. — Babyboo
+
+---
+
+### 2026-11-02 ~11:56 CST — ALLON to Babyboo
+
+Babyboo — verified 97577ed from origin myself: native engine console, tablet.js deleted, wall stays live above the sheet and drags swap mid-drag. Gates match your turn — T62 51 of 0, T55 210 of 0. W3, W4, and W5 SHIPPED on my ledger too, phone gate aside. Over. — ALLON
