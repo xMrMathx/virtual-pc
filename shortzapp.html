@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shortz VS — Full App</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:#000}
+  body{overflow:hidden;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  /* The full Shortz VS app, unmodified, filling the glass edge to
+     edge. The engine sizes this layer from the host screen's shape:
+     on the left vertical the layout viewport is phone-width, so the
+     app renders its own phone UI — bottom tabs, swipeable card rows,
+     tap a card -> its info -> its player — exactly as on a phone. */
+  #app{position:absolute;inset:0;width:100%;height:100%;border:0;display:block;background:#000}
+  /* Shown only while displaced: the app is UNLOADED (below), so this
+     veil is all that exists of it — no hidden picture, no hidden
+     sound. Putting it back on a screen reloads the app fresh. */
+  #veil{position:absolute;inset:0;display:none;flex-direction:column;gap:8px;
+        align-items:center;justify-content:center;text-align:center;padding:18px;
+        background:#07070d;color:#9a9aad}
+  #veil .big{font-size:19px;font-weight:800;color:#f2f2f7;letter-spacing:.4px}
+  #veil .big b{color:#ff2e88}
+  #veil .sub{font-size:13px;line-height:1.5;max-width:300px}
+  body.stopped #veil{display:flex}
+  body.stopped #app{display:none}
+</style>
+</head>
+<body>
+<iframe id="app" title="Shortz VS — Full App"
+        allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+        allowfullscreen></iframe>
+<div id="veil">
+  <div class="big">SHORTZ <b>VS</b> — FULL APP</div>
+  <div class="sub">Stopped — it's off its screen. Put it back on a screen and it picks right back up.</div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  /* The REAL Shortz VS app — the live site itself, unmodified and
+     un-reskinned. Framing verified 2026-11-01: the GitHub Pages
+     deployment sends no X-Frame-Options and no CSP frame-ancestors,
+     so the exact app can live in this glass. (The Cloudflare Pages
+     mirror frames cleanly too; this is the canonical share URL.) */
+  var APP_URL = 'https://xmrmathx.github.io/shortz-tv/';
+  var KEY = 'shortzapp';
+  var frame = document.getElementById('app');
+  var live = false;        /* the app document is loaded in the frame */
+  var stopped = false;     /* displaced: frame unloaded, audio dead */
+
+  function loadApp(){
+    try { frame.src = APP_URL; } catch (e) {}
+    live = true;
+  }
+  /* DISPLACEMENT STOP (his ruling 2026-11-01 ~20:36 CST — a surface
+     taken off its screen stops, audio included, until HE puts it
+     back). The app is cross-origin, so nothing can reach inside it
+     to pause its player; the stop here is the hard one the rule
+     demands: the frame is UNLOADED to about:blank, which destroys
+     the app's document — every video, every sound, gone — and the
+     veil takes its place. Coming back reloads the app at its front
+     door (the app keeps its own place-keeping internally, like any
+     fresh open of Shortz on a phone). */
+  /* Two stop signals, one rule: EITHER signal saying "down" stops
+     the app; BOTH must say "up" before it returns. (A resume from
+     one signal must never override the other's stop.) */
+  var msgStop = false, snapStop = false;
+  function applyStop(){
+    var s = msgStop || snapStop;
+    if (s && !stopped){
+      stopped = true;
+      try { frame.src = 'about:blank'; } catch (e) {}
+      live = false;
+      document.body.classList.add('stopped');
+    } else if (!s && stopped){
+      stopped = false;
+      document.body.classList.remove('stopped');
+      loadApp();
+    }
+  }
+  function stopApp(){ msgStop = true; applyStop(); }
+  function resumeApp(){ msgStop = false; applyStop(); }
+
+  /* Signal 1 — the room's displacement guard (tools.js) tells every
+     tracked surface when it leaves its screen, the same message the
+     YouTube surface obeys. */
+  window.addEventListener('message', function(e){
+    if (!e.data || e.data.vpc !== 'displaced') return;
+    if (e.data.on) stopApp(); else resumeApp();
+  });
+
+  /* Signal 2 — this surface's own watch on the same placement truth
+     the guard reads: the engine's layout snapshot in localStorage
+     (vpc_layout_v1). Face-up = this app has a host screen that is
+     powered, AND no other app shares that host (the engine's yield
+     rule: one face per screen — when he switches another app onto
+     this screen, this app steps aside, stopped; when that app
+     leaves, this app's face returns on its own). A split guest spot
+     counts as face-up. No snapshot yet (first boot) = face-up. */
+  function faceUp(){
+    var s = null;
+    try { s = JSON.parse(localStorage.getItem('vpc_layout_v1') || 'null'); }
+    catch (e) { return !stopped; }
+    if (!s || typeof s !== 'object') return true;
+    var host = '';
+    var sp = s.split_app && s.split_app[KEY];
+    if (sp && sp.host) host = String(sp.host);
+    else if (s.hosts && Object.prototype.hasOwnProperty.call(s.hosts, KEY))
+      host = String(s.hosts[KEY] || '');
+    else if (!sp)
+      return true;   /* no snapshot names this app yet — the engine's
+                        coded start position (left vertical) governs */
+    if (!host) return false;
+    if (s.power && s.power[host] === false) return false;
+    if (!sp){
+      var others = ['browser','youtube','muse','gaming','babyboo','studio'];
+      for (var i = 0; i < others.length; i++){
+        var k = others[i], kh = '';
+        var ksp = s.split_app && s.split_app[k];
+        if (ksp && ksp.host) kh = String(ksp.host);
+        else if (s.hosts && Object.prototype.hasOwnProperty.call(s.hosts, k))
+          kh = String(s.hosts[k] || '');
+        if (kh && kh === host) return false;   /* another app holds this screen's face */
+      }
+    }
+    return true;
+  }
+  setInterval(function(){
+    snapStop = !faceUp();
+    applyStop();
+  }, 500);
+
+  /* proof / diagnostics surface, same style as the other screens */
+  window.__vpcShortzAppState = function(){
+    return { live: live, stopped: stopped,
+             src: frame.getAttribute('src') || '',
+             face: faceUp() };
+  };
+
+  loadApp();
+})();
+</script>
+</body>
+</html>
