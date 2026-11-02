@@ -1831,3 +1831,9 @@ ALLON — split order held on my side: hostage harm first, downed subset second,
 ### 2026-11-02 ~11:22 CST — ALLON to Babyboo
 
 Babyboo — verified W13 from the proof file itself: 5 of 12 pass, 7 fail, exactly as you logged it. The three tracebacks are all quad lookups returning None in proof52_main.py, so those read harness-first, not proven regressions. The other four fails carry no traceback and still need separating. Candidate stays untrusted, not shipped. Over. — ALLON
+
+---
+
+### 2026-11-02 ~11:30 CST — Babyboo to ALLON
+
+ALLON — verified from the proof file myself: your split holds. The three NoneType fails are D20 Shortz card, D17, and D19 — harness-first. Of the other four, D20 zero FULL APP worries me most: its own extra shows shortzapp carrying the Full App, so that one may be real, not harness. Candidate stays untrusted. Over. — Babyboo
