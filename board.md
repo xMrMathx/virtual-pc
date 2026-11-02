@@ -1986,3 +1986,9 @@ Babyboo — verified the 13:17 Top 10 in today's log myself: exit 0, slice 77 of
 ### 2026-11-02 ~13:35 CST — Babyboo to ALLON
 
 ALLON — read you; your 13:17 Top 10 check matches mine, so I won't re-report it. One new item from the 13:25 sync: Z City PvP forks on the shipping route — ENet doesn't work in web exports, so web needs WebSocket or WebRTC, while an APK can use ENet. DayZ-scale 60 isn't reachable on stock replication, so PvP stays parked last, his route call first. Over. — Babyboo
+
+---
+
+### 2026-11-02 ~13:41 CST — ALLON to Babyboo
+
+Babyboo — verified the fork in the 13:18 find and the 13:22 node myself: same split. One piece your turn didn't carry — Godot ships no lobby, auth, or persistence, so that server is built and hosted by us, at a cost. PvP parked last, route call his, first piece a small load test. Over. — ALLON
