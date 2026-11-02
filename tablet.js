@@ -43,7 +43,7 @@
     '#vpc-tab{position:fixed;inset:0;z-index:90;display:none;align-items:flex-end;justify-content:center;',
     'background:rgba(2,6,14,.55);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}',
     '#vpc-tab.open{display:flex}',
-    '#vpc-tab-panel{width:min(96vw,440px);max-height:94vh;overflow-y:auto;background:linear-gradient(180deg,#0a1420,#050a12);',
+    '#vpc-tab-panel{width:min(96vw,440px);max-height:94vh;overflow-y:auto;overflow-x:hidden;background:linear-gradient(180deg,#0a1420,#050a12);',
     'border:1.5px solid rgba(89,215,255,.55);border-bottom:none;border-radius:20px 20px 0 0;',
     'box-shadow:0 -12px 44px rgba(0,0,0,.65),0 0 22px rgba(89,215,255,.18) inset;color:#dfeeff;',
     'padding:12px 12px 18px;transform:translateY(46px) scale(.97);opacity:0;transition:transform .38s cubic-bezier(.2,.9,.25,1),opacity .3s}',
@@ -52,10 +52,10 @@
     '#vpc-tab-title{font-size:14px;font-weight:800;letter-spacing:.14em;color:#9adcff;flex:1}',
     '#vpc-tab-x{appearance:none;border:1px solid rgba(159,220,255,.4);background:rgba(20,40,64,.85);color:#eaf7ff;',
     'width:34px;height:34px;border-radius:50%;font-size:16px;line-height:1;cursor:pointer}',
-    '#vpc-tab-grid{display:grid;grid-template-columns:1fr 1.25fr 1fr;gap:7px}',
+    '#vpc-tab-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr) minmax(0,1fr);gap:7px}',
     '.vpc-tile{position:relative;border:1.2px solid rgba(120,180,255,.35);border-radius:11px;background:rgba(16,30,50,.85);',
-    'padding:7px 8px 6px;min-height:52px;cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none}',
-    '.vpc-tile .cn{font-size:12.5px;font-weight:800;color:#eaf7ff;line-height:1.15;letter-spacing:.02em}',
+    'padding:7px 8px 6px;min-height:52px;min-width:0;cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none}',
+    '.vpc-tile .cn{font-size:12.5px;font-weight:800;color:#eaf7ff;line-height:1.15;letter-spacing:.02em;overflow-wrap:anywhere}',
     '.vpc-tile .ps{font-size:9px;font-weight:700;letter-spacing:.09em;color:#7fb6d9;margin-top:2px}',
     '.vpc-tile .st{position:absolute;top:6px;right:7px;width:8px;height:8px;border-radius:50%;background:#39e07a;box-shadow:0 0 6px #39e07a}',
     '.vpc-tile.off{opacity:.55}.vpc-tile.off .st{background:#5a6a7a;box-shadow:none}',
@@ -255,6 +255,13 @@
   }
   /* ---- per-screen volume (on each tile) ---- */
   var volTimers = {};
+  /* His set values, held console-side from the moment he drags:
+     a tile always renders HIS value until the engine's payload
+     reports the same number back (the cmd round-trip can take a
+     second on a loaded phone; rendering the payload's older value
+     in between snapped the slider back under his finger and read
+     as "the volume buttons don't work"). */
+  var localVols = {};
   function sendVolCmd(id, v) {
     if (volTimers[id]) clearTimeout(volTimers[id]);
     volTimers[id] = setTimeout(function () {
@@ -266,7 +273,10 @@
     var inp = d.querySelector('.vs');
     var pct = d.querySelector('.vp');
     if (!inp) return;
-    var v = (typeof s.vol === 'number') ? s.vol : 1;
+    if (typeof localVols[id] === 'number' && typeof s.vol === 'number' &&
+        Math.abs(s.vol - localVols[id]) < 0.005) delete localVols[id];   /* engine caught up */
+    var v = (typeof localVols[id] === 'number') ? localVols[id]
+          : ((typeof s.vol === 'number') ? s.vol : 1);
     inp.value = Math.round(v * 100);
     pct.textContent = Math.round(v * 100) + '%';
     inp.addEventListener('pointerdown', function (ev) {
@@ -286,6 +296,7 @@
     inp.addEventListener('click', function (ev) { ev.stopPropagation(); });
     inp.addEventListener('input', function () {
       var val = parseInt(inp.value, 10) / 100;
+      localVols[id] = val;
       pct.textContent = inp.value + '%';
       if (window.__vpcSetSlotVol) window.__vpcSetSlotVol(id, val);
       sendVolCmd(id, val);

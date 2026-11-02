@@ -354,13 +354,28 @@ this screen skips to the next one on its own.</div>
     var sv = null;
     try { sv = JSON.parse(localStorage.getItem(YT_KEY) || 'null'); } catch (e) {}
     if (!sv) return false;
-    if (sv.mode === 'search' && sv.term){ search(sv.term); return true; }
+    if (sv.mode === 'search' && sv.term){
+      /* BOOT CUE (his rule, 2026-11-02): a restored search returns
+         as a CUED playlist, never auto-playing. search() itself is
+         his action and keeps its autoplay; a restore is not one. */
+      mode = 'search'; searchErrs = 0; curId = null; lastTerm = sv.term;
+      player.src = 'https://www.youtube-nocookie.com/embed?listType=search&list=' +
+                   encodeURIComponent(sv.term) + '&autoplay=0&rel=0&playsinline=1&enablejsapi=1' + originParam();
+      showPlayer(); hideTapPlay(); rebind();
+      return true;
+    }
     if (sv.queue && sv.queue.length){
       queue = sv.queue.slice();
       qIdx = Math.min(Math.max(sv.qIdx || 0, 0), queue.length - 1);
       mode = (sv.mode === 'single') ? 'single' : 'queue';
       skips = 0;
-      loadCurrent(!sv.paused, sv.t || 0);
+      /* BOOT CUE: the video he left returns CUED at its saved
+         position, silent — however it was left. The old line
+         passed !sv.paused, so a video left playing resumed BY
+         ITSELF at every fresh load of this surface (his "random
+         video plays automatically" report); the displacement
+         restore path already cues — boot now matches it. */
+      loadCurrent(false, sv.t || 0);
       return true;
     }
     return false;

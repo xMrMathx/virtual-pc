@@ -289,7 +289,19 @@
     if (e.data === 0){ if (wantPlay) advance('ended'); return; }   // ENDED → next episode (Defect 24)
     if (!wantPlay) return;
     if (e.data === 2 && !displaced && Date.now() - lastTouchAt > 1500){   // PAUSED, not his tap
-      try { ytPlayer.playVideo(); } catch (err) {}
+      /* Deferred re-check (the re-entry race, 2026-11-02): a
+         displacement stop posts its flag and sweeps in the same
+         breath — the embed's pause event can reach this handler
+         BEFORE the flag lands in this document, and an instant
+         playVideo() here restarts a show the watcher just stopped,
+         with no further pause event to catch it. Wait a beat, then
+         resume only if the flag never came and the player is
+         still paused. */
+      setTimeout(function(){
+        if (!wantPlay || displaced || !ytPlayer) return;
+        if (Date.now() - lastTouchAt <= 1500) return;
+        try { if (ytPlayer.getPlayerState() === 2) ytPlayer.playVideo(); } catch (err) {}
+      }, 700);
     }
   }
   function onYtError(e){
@@ -509,7 +521,14 @@
     ctx = ctxFor(rec, (typeof sv.idx === 'number') ? sv.idx : -1, sv.url);
     lastPlayUrl = sv.url;
     curYtId = ytIdOf(sv.url);
-    wantPlay = !!sv.want && !sv.paused;
+    /* BOOT CUE (his rule, 2026-11-02 — "the random video is just
+       play automatically"): a restored show comes up CUED at its
+       saved place, however it was left. The old line resumed
+       playing whenever the saved state was mid-play — at every
+       room boot this surface's last show started by itself, even
+       with another app covering its screen. His play press is the
+       only thing that starts it (play() sets wantPlay). */
+    wantPlay = false;
     lastTouchAt = Date.now();
     var start = Math.max(0, Math.floor(sv.t || 0));
     var extra = 'autoplay=' + (wantPlay ? 1 : 0) + '&rel=0' + (start ? '&start=' + start : '')

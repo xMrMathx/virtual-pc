@@ -132,6 +132,82 @@
     applyStop();
   }, 500);
 
+  /* MASTER + PER-SCREEN VOLUME (hub contract): the top window's
+     hub delivers THIS screen's effective gain (master x this
+     screen's console slider) to this window — direct var,
+     'vpc-mastervol' message, __vpcApplyMasterVol call. Until now
+     all three landed here and DIED: this wrapper had no applier,
+     so the Full App's volume slider (and the master) did nothing
+     at all — his "the volume buttons don't work" report. The app
+     inside the frame is same-origin, so the gain is forwarded in:
+     the var + message are relayed to the app window, every HTML
+     media element in the app is set directly, and YouTube embeds
+     inside the app receive the API setVolume command. Media the
+     app starts later is caught by the re-sweep and by the hub's
+     own re-pushes. */
+  var gain = 1;
+  function ytCmd(win, func, args){
+    try { win.postMessage({ event: 'command', func: func, args: args || [] }, '*'); } catch (e) {}
+  }
+  function eachEmbed(doc, fn){
+    var fr = doc.querySelectorAll('iframe');
+    for (var j = 0; j < fr.length; j++){
+      var src = '';
+      try { src = fr[j].getAttribute('src') || ''; } catch (e) {}
+      if (/youtube(-nocookie)?\.com\/embed/.test(src) && fr[j].contentWindow) fn(fr[j].contentWindow);
+    }
+  }
+  function sweepAppMedia(){
+    var doc = null;
+    try { doc = frame.contentDocument; } catch (e) { return; }
+    if (!doc) return;
+    try {
+      var ms = doc.querySelectorAll('video, audio');
+      for (var i = 0; i < ms.length; i++){ try { ms[i].volume = gain; } catch (e) {} }
+      eachEmbed(doc, function (w){ ytCmd(w, 'setVolume', [Math.round(gain * 100)]); });
+    } catch (e) {}
+  }
+  function applyGain(){
+    var v = (typeof window.__vpcMasterVol === 'number') ? window.__vpcMasterVol : gain;
+    gain = Math.max(0, Math.min(1, v));
+    try { frame.contentWindow.__vpcMasterVol = gain; } catch (e) {}
+    try { frame.contentWindow.postMessage({ type: 'vpc-mastervol', vol: gain, muted: gain === 0 }, '*'); } catch (e) {}
+    sweepAppMedia();
+  }
+  window.__vpcApplyMasterVol = applyGain;
+  window.addEventListener('message', function (e){
+    if (e.data && e.data.type === 'vpc-mastervol'){ window.__vpcMasterVol = e.data.vol; applyGain(); }
+  });
+  setInterval(function (){ if (!stopped && live) sweepAppMedia(); }, 2000);
+
+  /* BOOT CUE (his rule — nothing plays unasked): this wrapper
+     (re)loads the app at its front door on boot and on return
+     from displacement. If the app's own open starts any media by
+     itself, that media is paused ONCE here — unless he has
+     already touched the app since it loaded (his taps are his,
+     and anything he starts is left alone). */
+  var appTouched = false;
+  function cuePauseApp(){
+    if (appTouched || stopped) return;
+    var doc = null;
+    try { doc = frame.contentDocument; } catch (e) { return; }
+    if (!doc) return;
+    try {
+      var ms = doc.querySelectorAll('video, audio');
+      for (var i = 0; i < ms.length; i++){ try { ms[i].pause(); } catch (e) {} }
+      eachEmbed(doc, function (w){ ytCmd(w, 'pauseVideo', []); });
+    } catch (e) {}
+  }
+  frame.addEventListener('load', function (){
+    appTouched = false;
+    try {
+      var doc = frame.contentDocument;
+      if (doc) doc.addEventListener('pointerdown', function (){ appTouched = true; }, true);
+    } catch (e) {}
+    setTimeout(applyGain, 350);
+    setTimeout(cuePauseApp, 900);
+  });
+
   /* proof / diagnostics surface, same style as the other screens */
   window.__vpcShortzAppState = function(){
     return { live: live, stopped: stopped,
