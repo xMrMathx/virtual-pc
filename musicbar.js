@@ -343,15 +343,21 @@
     panel.id = 'vpc-music-panel';
     var hd = document.createElement('div');
     hd.className = 'hd';
-    var hdt = document.createElement('span');
-    hdt.textContent = 'MUSIC — FROM THE OFFICE + YOUR LATEST';
-    hd.appendChild(hdt);
+    /* T1c (his report, 2026-11-02 ~11:26 CST): the exit of an opened
+       surface belongs at the TOP LEFT — the ✕ leads the header, so
+       the music surface's close sits at its top-left corner, below
+       the strip (the panel docks at top:BAR_H), fully visible and
+       tappable. It used to trail the title at the right. */
     var hx = document.createElement('div');
+    hx.id = 'vpc-music-x';
     hx.textContent = '✕'; hx.style.cursor = 'pointer'; hx.style.padding = '2px 6px';
     hx.addEventListener('pointerdown', function (ev) {
       ev.preventDefault(); ev.stopPropagation(); setPanel(false);
     });
     hd.appendChild(hx);
+    var hdt = document.createElement('span');
+    hdt.textContent = 'MUSIC — FROM THE OFFICE + YOUR LATEST';
+    hd.appendChild(hdt);
     panel.appendChild(hd);
     panelList = document.createElement('div');
     panel.appendChild(panelList);
